@@ -53,6 +53,7 @@ import { formatTsFromSeconds } from "@/lib/utils/usage";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { useDesktopPageActive } from "@/hooks/useDesktopPageActive";
 import { useDeferredDesktopActivation } from "@/hooks/useDeferredDesktopActivation";
+import { useI18n } from "@/hooks/useI18n";
 import { usePageTransitionReady } from "@/hooks/usePageTransitionReady";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { AggregateApi } from "@/types";
@@ -68,25 +69,26 @@ const AGGREGATE_API_PROVIDER_FILTER_LABELS: Record<string, string> = {
   claude: "Claude",
 };
 
-function getTestBadge(api: AggregateApi) {
+function getTestBadge(api: AggregateApi, t: ReturnType<typeof useI18n>["t"]) {
   if (api.lastTestStatus === "success") {
     return (
       <Badge className="border-green-500/20 bg-green-500/10 text-green-500">
-        已连通
+        {t("已连通")}
       </Badge>
     );
   }
   if (api.lastTestStatus === "failed") {
     return (
       <Badge className="border-red-500/20 bg-red-500/10 text-red-500">
-        失败
+        {t("失败")}
       </Badge>
     );
   }
-  return <Badge variant="secondary">未测试</Badge>;
+  return <Badge variant="secondary">{t("未测试")}</Badge>;
 }
 
 export default function AggregateApiPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const serviceStatus = useAppStore((state) => state.serviceStatus);
   const { canAccessManagementRpc } = useRuntimeCapabilities();
@@ -140,7 +142,7 @@ export default function AggregateApiPage() {
   }, [aggregateApis]);
 
   const renderTestStatus = (api: AggregateApi) => {
-    const badge = getTestBadge(api);
+    const badge = getTestBadge(api, t);
     if (api.lastTestStatus !== "failed" || !api.lastTestError) {
       return badge;
     }
@@ -167,8 +169,10 @@ export default function AggregateApiPage() {
       await queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] });
       toast.success(
         result.ok
-          ? "连通性测试成功"
-          : `连通性测试失败: ${result.message || result.statusCode || ""}`,
+          ? t("连通性测试成功")
+          : t("连通性测试失败: {message}", {
+              message: result.message || result.statusCode || "",
+            }),
       );
     },
     onSettled: async (_result, _error, apiId) => {
@@ -176,7 +180,9 @@ export default function AggregateApiPage() {
     },
     onError: (error: unknown) => {
       toast.error(
-        `测试失败: ${error instanceof Error ? error.message : String(error)}`,
+        t("测试失败: {message}", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
       );
     },
   });
@@ -187,11 +193,13 @@ export default function AggregateApiPage() {
       await queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] });
       await queryClient.invalidateQueries({ queryKey: ["apikeys"] });
       await queryClient.invalidateQueries({ queryKey: ["startup-snapshot"] });
-      toast.success("聚合 API 已删除");
+      toast.success(t("聚合 API 已删除"));
     },
     onError: (error: unknown) => {
       toast.error(
-        `删除失败: ${error instanceof Error ? error.message : String(error)}`,
+        t("删除失败: {message}", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
       );
     },
   });
@@ -220,15 +228,17 @@ export default function AggregateApiPage() {
     },
     onSuccess: async (changed) => {
       if (!changed) {
-        toast.info("当前聚合 API 已是优先渠道");
+        toast.info(t("当前聚合 API 已是优先渠道"));
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] });
-      toast.success("已设为优先渠道");
+      toast.success(t("已设为优先渠道"));
     },
     onError: (error: unknown) => {
       toast.error(
-        `设置优先失败: ${error instanceof Error ? error.message : String(error)}`,
+        t("设置优先失败: {message}", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
       );
     },
   });
@@ -251,7 +261,7 @@ export default function AggregateApiPage() {
     try {
       const secret = await accountClient.readAggregateApiSecret(apiId);
       if (!secret) {
-        throw new Error("后端未返回密钥明文");
+        throw new Error(t("后端未返回密钥明文"));
       }
       setRevealedSecrets((current) => ({ ...current, [apiId]: secret }));
       return secret;
@@ -280,7 +290,7 @@ export default function AggregateApiPage() {
     try {
       const secret = await ensureSecretLoaded(apiId);
       await copyTextToClipboard(secret);
-      toast.success("已复制到剪贴板");
+      toast.success(t("已复制到剪贴板"));
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -291,7 +301,7 @@ export default function AggregateApiPage() {
       {!isServiceReady ? (
         <Card className="glass-card border-none shadow-sm">
           <CardContent className="pt-6 text-sm text-muted-foreground">
-            服务未连接，聚合 API 暂不可用；连接恢复后会自动继续加载。
+            {t("服务未连接，聚合 API 暂不可用；连接恢复后会自动继续加载。")}
           </CardContent>
         </Card>
       ) : null}
@@ -299,7 +309,7 @@ export default function AggregateApiPage() {
       <div>
         <div>
           <p className="mt-1 text-sm text-muted-foreground">
-            管理上游聚合地址与密钥，并测试连通性
+            {t("管理上游聚合地址与密钥，并测试连通性")}
           </p>
         </div>
       </div>
@@ -309,7 +319,7 @@ export default function AggregateApiPage() {
           <CardContent className="px-4 ">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">查询</span>
+                <span className="text-sm text-muted-foreground">{t("查询")}</span>
                 <Select
                   value={providerFilter}
                   onValueChange={(value) => setProviderFilter(value || "all")}
@@ -317,14 +327,16 @@ export default function AggregateApiPage() {
                   <SelectTrigger className="w-[160px]">
                     <SelectValue>
                       {(value) =>
-                        AGGREGATE_API_PROVIDER_FILTER_LABELS[
-                          String(value || "")
-                        ] || "全部类型"
+                        t(
+                          AGGREGATE_API_PROVIDER_FILTER_LABELS[
+                            String(value || "")
+                          ] || "全部类型",
+                        )
                       }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部类型</SelectItem>
+                    <SelectItem value="all">{t("全部类型")}</SelectItem>
                     <SelectItem value="codex">Codex</SelectItem>
                     <SelectItem value="claude">Claude</SelectItem>
                   </SelectContent>
@@ -332,14 +344,14 @@ export default function AggregateApiPage() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-xs text-muted-foreground">
-                  共 {filteredAggregateApis.length} 条
+                  {t("共 {count} 条", { count: filteredAggregateApis.length })}
                 </div>
                 <Button
                   className="h-10 gap-2 shadow-lg shadow-primary/20"
                   onClick={openCreateModal}
                   disabled={!isServiceReady}
                 >
-                  <Plus className="h-4 w-4" /> 新建聚合 API
+                  <Plus className="h-4 w-4" /> {t("新建聚合 API")}
                 </Button>
               </div>
             </div>
@@ -351,12 +363,12 @@ export default function AggregateApiPage() {
             <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="max-w-[220px]">供应商 / URL</TableHead>
-                  <TableHead className="w-[84px] text-center">类型</TableHead>
-                  <TableHead className="w-[148px]">密钥</TableHead>
-                  <TableHead className="w-[64px] text-center">顺序</TableHead>
-                  <TableHead className="w-[130px]">测试连通性</TableHead>
-                  <TableHead className="text-center">操作</TableHead>
+                  <TableHead className="max-w-[220px]">{t("供应商 / URL")}</TableHead>
+                  <TableHead className="w-[84px] text-center">{t("类型")}</TableHead>
+                  <TableHead className="w-[148px]">{t("密钥")}</TableHead>
+                  <TableHead className="w-[64px] text-center">{t("顺序")}</TableHead>
+                  <TableHead className="w-[130px]">{t("测试连通性")}</TableHead>
+                  <TableHead className="text-center">{t("操作")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -390,8 +402,12 @@ export default function AggregateApiPage() {
                         <ShieldCheck className="h-8 w-8 opacity-20" />
                         <p>
                           {providerFilter === "all"
-                            ? "暂无聚合 API，点击右上角新建"
-                            : `暂无 ${AGGREGATE_API_PROVIDER_LABELS[providerFilter] || providerFilter} 聚合 API`}
+                            ? t("暂无聚合 API，点击右上角新建")
+                            : t("暂无 {provider} 聚合 API", {
+                                provider:
+                                  AGGREGATE_API_PROVIDER_LABELS[providerFilter] ||
+                                  providerFilter,
+                              })}
                         </p>
                       </div>
                     </TableCell>
@@ -401,7 +417,7 @@ export default function AggregateApiPage() {
                     const revealed = revealedSecrets[api.id];
                     const createdTimeText = formatTsFromSeconds(
                       api.createdAt,
-                      "未知时间",
+                      t("未知时间"),
                     );
 
                     return (
@@ -430,7 +446,7 @@ export default function AggregateApiPage() {
                                   {api.url}
                                 </div>
                                 <div className="text-[11px] opacity-80">
-                                  创建时间: {createdTimeText}
+                                  {t("创建时间: {time}", { time: createdTimeText })}
                                 </div>
                               </div>
                             </TooltipContent>
@@ -459,7 +475,7 @@ export default function AggregateApiPage() {
                                   {revealed
                                     ? revealed
                                     : loadingSecretId === api.id
-                                      ? "读取中..."
+                                      ? t("读取中...")
                                       : api.id}
                                 </code>
                               </TooltipTrigger>
@@ -514,13 +530,13 @@ export default function AggregateApiPage() {
                                       : "h-3.5 w-3.5"
                                   }
                                 />
-                                测试
+                                {t("测试")}
                               </Button>
                             </div>
                           </div>
                           {api.lastTestAt ? (
                             <p className="mt-1 text-[10px] text-muted-foreground">
-                              {formatTsFromSeconds(api.lastTestAt, "未知时间")}
+                              {formatTsFromSeconds(api.lastTestAt, t("未知时间"))}
                             </p>
                           ) : null}
                         </TableCell>
@@ -532,7 +548,7 @@ export default function AggregateApiPage() {
                               className="h-8 w-8 text-muted-foreground transition-colors hover:text-primary"
                               disabled={!isServiceReady}
                               onClick={() => openEditModal(api.id)}
-                              title="编辑配置"
+                              title={t("编辑配置")}
                             >
                               <Settings2 className="h-4 w-4" />
                             </Button>
@@ -555,7 +571,7 @@ export default function AggregateApiPage() {
                                   disabled={!isServiceReady}
                                   onClick={() => openEditModal(api.id)}
                                 >
-                                  编辑聚合 API
+                                  {t("编辑聚合 API")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="gap-2"
@@ -564,14 +580,14 @@ export default function AggregateApiPage() {
                                   }
                                   onClick={() => prioritizeMutation.mutate(api)}
                                 >
-                                  <ArrowUp className="h-4 w-4" /> 设为优先
+                                  <ArrowUp className="h-4 w-4" /> {t("设为优先")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="gap-2 text-red-500"
                                   disabled={!isServiceReady}
                                   onClick={() => setDeleteId(api.id)}
                                 >
-                                  <Trash2 className="h-4 w-4" /> 删除聚合 API
+                                  <Trash2 className="h-4 w-4" /> {t("删除聚合 API")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

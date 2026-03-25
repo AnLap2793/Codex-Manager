@@ -48,6 +48,7 @@ import {
 import { serviceClient } from "@/lib/api/service-client";
 import { useDesktopPageActive } from "@/hooks/useDesktopPageActive";
 import { useDeferredDesktopActivation } from "@/hooks/useDeferredDesktopActivation";
+import { useI18n } from "@/hooks/useI18n";
 import { usePageTransitionReady } from "@/hooks/usePageTransitionReady";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { formatCompactNumber, formatTsFromSeconds } from "@/lib/utils/usage";
@@ -312,6 +313,7 @@ function AccountKeyInfoCell({
   apiKeyMap: Map<string, ApiKey>;
   aggregateApiMap: Map<string, AggregateApi>;
 }) {
+  const { t } = useI18n();
   const displayAccount = accountLabel || log.accountId || "-";
   const hasNamedAccount =
     Boolean(accountLabel) &&
@@ -377,14 +379,14 @@ function AccountKeyInfoCell({
     return (
       <Tooltip>
         <TooltipTrigger render={<div />} className="block text-left">
-          <div className="flex max-w-[180px] flex-col gap-0.5 opacity-80">
+        <div className="flex max-w-[180px] flex-col gap-0.5 opacity-80">
             <div className="flex items-center gap-1">
               <Database className="h-3 w-3 text-primary" />
-              <span className="truncate text-[11px] font-medium">
+              <span className="truncate text-[11px] font-medium xl:max-w-[220px]">
                 {aggregateApiDisplayName}
               </span>
             </div>
-            <div className="truncate font-mono text-[9px] text-muted-foreground">
+            <div className="truncate font-mono text-[9px] text-muted-foreground xl:max-w-[220px]">
               {aggregateApiDisplayUrl}
             </div>
             <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
@@ -393,7 +395,7 @@ function AccountKeyInfoCell({
             </div>
             {showAggregateAttemptHint ? (
               <div className="text-[9px] text-amber-500">
-                先试 {initialAggregateApiLabel}
+                {t("先试 {value}", { value: initialAggregateApiLabel })}
               </div>
             ) : null}
           </div>
@@ -401,7 +403,7 @@ function AccountKeyInfoCell({
         <TooltipContent className="max-w-sm">
           <div className="flex min-w-[240px] flex-col gap-2">
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">供应商名称</div>
+              <div className="text-[10px] text-background/70">{t("供应商名称")}</div>
               <div className="break-all font-mono text-[11px]">
                 {aggregateApiDisplayName}
               </div>
@@ -413,14 +415,14 @@ function AccountKeyInfoCell({
               </div>
             </div>
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">密钥</div>
+              <div className="text-[10px] text-background/70">{t("密钥")}</div>
               <div className="break-all font-mono text-[11px]">
                 {log.keyId || "-"}
               </div>
             </div>
             {attemptedAggregateApiLabels.length > 1 ? (
               <div className="space-y-0.5">
-                <div className="text-[10px] text-background/70">尝试链路</div>
+                <div className="text-[10px] text-background/70">{t("尝试链路")}</div>
                 <div className="break-all font-mono text-[11px]">
                   {attemptedAggregateApiLabels.join(" -> ")}
                 </div>
@@ -428,7 +430,7 @@ function AccountKeyInfoCell({
             ) : null}
             {initialAggregateApiLabel ? (
               <div className="space-y-0.5">
-                <div className="text-[10px] text-background/70">首尝试渠道</div>
+                <div className="text-[10px] text-background/70">{t("首尝试渠道")}</div>
                 <div className="break-all font-mono text-[11px]">
                   {initialAggregateApiLabel}
                 </div>
@@ -446,7 +448,7 @@ function AccountKeyInfoCell({
         <div className="flex flex-col gap-0.5 opacity-80">
           <div className="flex items-center gap-1">
             <Zap className="h-3 w-3 text-yellow-500" />
-            <span className="max-w-[140px] truncate">{displayAccount}</span>
+            <span className="max-w-[160px] truncate xl:max-w-[200px]">{displayAccount}</span>
           </div>
           <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
             <Shield className="h-2.5 w-2.5" />
@@ -456,7 +458,7 @@ function AccountKeyInfoCell({
           </div>
           {showAttemptHint ? (
             <div className="text-[9px] text-amber-500">
-              先试 {initialAccountLabel}
+              {t("先试 {value}", { value: initialAccountLabel })}
             </div>
           ) : null}
         </div>
@@ -465,7 +467,7 @@ function AccountKeyInfoCell({
         <div className="flex min-w-[240px] flex-col gap-2">
           {initialAccountLabel ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">首尝试账号</div>
+              <div className="text-[10px] text-background/70">{t("首尝试账号")}</div>
               <div className="break-all font-mono text-[11px]">
                 {initialAccountLabel}
               </div>
@@ -473,7 +475,7 @@ function AccountKeyInfoCell({
           ) : null}
           {attemptedAccountLabels.length > 1 ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">尝试链路</div>
+              <div className="text-[10px] text-background/70">{t("尝试链路")}</div>
               <div className="break-all font-mono text-[11px]">
                 {attemptedAccountLabels.join(" -> ")}
               </div>
@@ -481,20 +483,20 @@ function AccountKeyInfoCell({
           ) : null}
           {hasNamedAccount ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">邮箱 / 名称</div>
+              <div className="text-[10px] text-background/70">{t("邮箱 / 名称")}</div>
               <div className="break-all font-mono text-[11px]">
                 {accountLabel}
               </div>
             </div>
           ) : null}
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">账号 ID</div>
+            <div className="text-[10px] text-background/70">{t("账号 ID")}</div>
             <div className="break-all font-mono text-[11px]">
               {log.accountId || "-"}
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">密钥</div>
+            <div className="text-[10px] text-background/70">{t("密钥")}</div>
             <div className="break-all font-mono text-[11px]">
               {log.keyId || "-"}
             </div>
@@ -506,6 +508,7 @@ function AccountKeyInfoCell({
 }
 
 function RequestRouteInfoCell({ log }: { log: RequestLog }) {
+  const { t } = useI18n();
   const displayPath = resolveDisplayRequestPath(log) || "-";
   const recordedPath = String(log.path || log.requestPath || "").trim();
   const originalPath = String(log.originalPath || "").trim();
@@ -518,48 +521,48 @@ function RequestRouteInfoCell({ log }: { log: RequestLog }) {
       <TooltipTrigger render={<div />} className="block text-left">
         <div className="flex flex-col gap-0.5">
           <span className="font-bold text-primary">{log.method || "-"}</span>
-          <span className="max-w-[200px] truncate text-muted-foreground">
-            {displayPath}
+          <span className="max-w-[220px] truncate text-muted-foreground xl:max-w-[260px]">
+            {t(displayPath)}
           </span>
         </div>
       </TooltipTrigger>
       <TooltipContent className="max-w-md">
         <div className="flex min-w-[280px] flex-col gap-2">
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">方法</div>
+            <div className="text-[10px] text-background/70">{t("方法")}</div>
             <div className="font-mono text-[11px]">{log.method || "-"}</div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">显示地址</div>
-            <div className="break-all font-mono text-[11px]">{displayPath}</div>
+            <div className="text-[10px] text-background/70">{t("显示地址")}</div>
+            <div className="break-all font-mono text-[11px]">{t(displayPath)}</div>
           </div>
           {recordedPath && recordedPath !== displayPath ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">记录地址</div>
+              <div className="text-[10px] text-background/70">{t("记录地址")}</div>
               <div className="break-all font-mono text-[11px]">
-                {recordedPath}
+                {t(recordedPath)}
               </div>
             </div>
           ) : null}
           {originalPath && originalPath !== displayPath ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">原始地址</div>
+              <div className="text-[10px] text-background/70">{t("原始地址")}</div>
               <div className="break-all font-mono text-[11px]">
-                {originalPath}
+                {t(originalPath)}
               </div>
             </div>
           ) : null}
           {adaptedPath && adaptedPath !== displayPath ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">转发地址</div>
+              <div className="text-[10px] text-background/70">{t("转发地址")}</div>
               <div className="break-all font-mono text-[11px]">
-                {adaptedPath}
+                {t(adaptedPath)}
               </div>
             </div>
           ) : null}
           {log.responseAdapter ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">适配器</div>
+              <div className="text-[10px] text-background/70">{t("适配器")}</div>
               <div className="break-all font-mono text-[11px]">
                 {log.responseAdapter}
               </div>
@@ -567,15 +570,15 @@ function RequestRouteInfoCell({ log }: { log: RequestLog }) {
           ) : null}
           {upstreamDisplay ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">上游</div>
+              <div className="text-[10px] text-background/70">{t("上游")}</div>
               <div className="break-all font-mono text-[11px]">
-                {upstreamDisplay}
+                {t(upstreamDisplay)}
               </div>
             </div>
           ) : null}
           {upstreamUrl ? (
             <div className="space-y-0.5">
-              <div className="text-[10px] text-background/70">上游地址</div>
+              <div className="text-[10px] text-background/70">{t("上游地址")}</div>
               <div className="break-all font-mono text-[11px]">
                 {upstreamUrl}
               </div>
@@ -596,7 +599,7 @@ function ErrorInfoCell({ error }: { error: string }) {
   return (
     <Tooltip>
       <TooltipTrigger render={<div />} className="block text-left">
-        <span className="block max-w-[220px] truncate font-medium text-red-400">
+        <span className="block max-w-[240px] truncate font-medium text-red-400 xl:max-w-[280px]">
           {text}
         </span>
       </TooltipTrigger>
@@ -610,6 +613,7 @@ function ErrorInfoCell({ error }: { error: string }) {
 }
 
 function ModelEffortCell({ log }: { log: RequestLog }) {
+  const { t } = useI18n();
   const model = String(log.model || "").trim();
   const effort = String(log.reasoningEffort || "").trim();
   const display = formatModelEffortDisplay(log);
@@ -617,20 +621,20 @@ function ModelEffortCell({ log }: { log: RequestLog }) {
   return (
     <Tooltip>
       <TooltipTrigger render={<div />} className="block text-left">
-        <span className="block max-w-[160px] truncate font-medium text-foreground">
+        <span className="block max-w-[180px] truncate font-medium text-foreground xl:max-w-[220px]">
           {display}
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-sm">
         <div className="flex min-w-[200px] flex-col gap-2">
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">模型</div>
+            <div className="text-[10px] text-background/70">{t("模型")}</div>
             <div className="break-all font-mono text-[11px]">
               {model || "-"}
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-[10px] text-background/70">推理</div>
+            <div className="text-[10px] text-background/70">{t("推理")}</div>
             <div className="break-all font-mono text-[11px]">
               {effort || "-"}
             </div>
@@ -667,6 +671,7 @@ function buildSummaryPlaceholder(logs: RequestLog[]): RequestLogFilterSummary {
 function LogsPageContent() {
   const searchParams = useSearchParams();
   const { serviceStatus } = useAppStore();
+  const { t } = useI18n();
   const isPageActive = useDesktopPageActive("/logs/");
   const queryClient = useQueryClient();
   const areLogQueriesEnabled = useDeferredDesktopActivation(serviceStatus.connected);
@@ -776,7 +781,7 @@ function LogsPageContent() {
         queryClient.invalidateQueries({ queryKey: ["today-summary"] }),
         queryClient.invalidateQueries({ queryKey: ["startup-snapshot"] }),
       ]);
-      toast.success("日志已清空");
+      toast.success(t("日志已清空"));
     },
     onError: (error: unknown) => {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -859,15 +864,19 @@ function LogsPageContent() {
 
   const currentFilterLabel =
     filter === "all"
-      ? "全部状态"
+      ? t("全部状态")
       : filter === "2xx"
-        ? "成功请求"
+        ? t("成功请求")
         : filter === "4xx"
-          ? "客户端错误"
-          : "服务端错误";
-  const compactMetaText = `${summary.filteredCount}/${summary.totalCount} 条 · ${currentFilterLabel} · ${
-    serviceStatus.connected ? "5 秒刷新" : "服务未连接"
-  }`;
+          ? t("客户端错误")
+          : t("服务端错误");
+  const refreshLabel = serviceStatus.connected ? t("5 秒刷新") : t("服务未连接");
+  const compactMetaText = t("{filteredCount}/{totalCount} 条 · {filterLabel} · {refreshLabel}", {
+    filteredCount: summary.filteredCount,
+    totalCount: summary.totalCount,
+    filterLabel: currentFilterLabel,
+    refreshLabel,
+  });
 
   return (
     <div className="animate-in space-y-5 fade-in duration-500">
@@ -875,7 +884,7 @@ function LogsPageContent() {
         <CardContent className="grid gap-3 pt-0 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] lg:items-center">
           <div className="min-w-0">
             <Input
-              placeholder="搜索路径、账号或密钥..."
+              placeholder={t("搜索路径、账号或密钥...")}
               className="glass-card h-10 rounded-xl px-3"
               value={search}
               onChange={(event) => {
@@ -912,7 +921,7 @@ function LogsPageContent() {
                 queryClient.invalidateQueries({ queryKey: ["logs"] })
               }
             >
-              <RefreshCw className="mr-1.5 h-4 w-4" /> 刷新
+              <RefreshCw className="mr-1.5 h-4 w-4" /> {t("刷新")}
             </Button>
             <Button
               variant="destructive"
@@ -921,7 +930,7 @@ function LogsPageContent() {
               onClick={() => setClearConfirmOpen(true)}
               disabled={clearMutation.isPending}
             >
-              <Trash2 className="mr-1.5 h-4 w-4" /> 清空日志
+              <Trash2 className="mr-1.5 h-4 w-4" /> {t("清空日志")}
             </Button>
           </div>
           <div className="text-[11px] text-muted-foreground lg:justify-self-end lg:text-right">
@@ -934,30 +943,30 @@ function LogsPageContent() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
-          title="当前结果"
+          title={t("当前结果")}
           value={`${summary.filteredCount}`}
-          description={`总日志 ${summary.totalCount} 条`}
+          description={t("总日志 {count} 条", { count: summary.totalCount })}
           icon={Zap}
           toneClass="bg-primary/12 text-primary"
         />
         <SummaryCard
-          title="2XX 成功"
+          title={t("2XX 成功")}
           value={`${summary.successCount}`}
-          description="状态码 200-299"
+          description={t("状态码 200-299")}
           icon={CheckCircle2}
           toneClass="bg-green-500/12 text-green-500"
         />
         <SummaryCard
-          title="异常请求"
+          title={t("异常请求")}
           value={`${summary.errorCount}`}
-          description="4xx / 5xx 或显式错误"
+          description={t("4xx / 5xx 或显式错误")}
           icon={AlertTriangle}
           toneClass="bg-red-500/12 text-red-500"
         />
         <SummaryCard
-          title="累计令牌"
+          title={t("累计令牌")}
           value={formatCompactNumber(summary.totalTokens, "0")}
-          description="当前筛选结果中的 total tokens"
+          description={t("当前筛选结果中的 total tokens")}
           icon={Database}
           toneClass="bg-amber-500/12 text-amber-500"
         />
@@ -967,44 +976,40 @@ function LogsPageContent() {
         <CardHeader className="flex min-h-1 items-center border-b border-border/40 bg-[var(--table-section-bg)] py-3">
           <div className="flex w-full flex-col gap-1 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <CardTitle className="text-[15px] font-semibold">
-                请求明细 按{" "}
-                <span className="font-medium text-foreground">
-                  {currentFilterLabel}
-                </span>{" "}
-                展示
+              <CardTitle className="text-[15px] font-semibold leading-5 text-balance">
+                {t("请求明细 按 {label} 展示", { label: currentFilterLabel })}
               </CardTitle>
             </div>
             <div className="text-xs text-muted-foreground"></div>
           </div>
         </CardHeader>
         <CardContent className="px-0">
-          <Table className="min-w-[1320px] table-fixed">
+          <Table className="min-w-[1480px] table-fixed xl:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="h-12 w-[150px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  时间
+                <TableHead className="h-14 w-[158px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("时间")}
                 </TableHead>
-                <TableHead className="w-[120px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  方法 / 路径
+                <TableHead className="w-[160px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("方法 / 路径")}
                 </TableHead>
-                <TableHead className="w-[224px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  账号 / 密钥
+                <TableHead className="w-[240px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("账号 / 密钥")}
                 </TableHead>
-                <TableHead className="w-[180px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  模型 / 推理
+                <TableHead className="w-[196px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("模型 / 推理")}
                 </TableHead>
-                <TableHead className="w-[92px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  状态
+                <TableHead className="w-[110px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("状态")}
                 </TableHead>
-                <TableHead className="w-[110px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  请求时长
+                <TableHead className="w-[124px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("请求时长")}
                 </TableHead>
-                <TableHead className="w-[148px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  令牌
+                <TableHead className="w-[156px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("令牌")}
                 </TableHead>
-                <TableHead className="w-[240px] px-4 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  错误
+                <TableHead className="w-[260px] px-4 py-3 align-top whitespace-normal text-[11px] leading-4 font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  {t("错误")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -1045,8 +1050,8 @@ function LogsPageContent() {
                     className="h-52 px-4 text-center text-sm text-muted-foreground"
                   >
                     {!serviceStatus.connected
-                      ? "服务未连接，无法获取日志"
-                      : "暂无请求日志"}
+                      ? t("服务未连接，无法获取日志")
+                      : t("暂无请求日志")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1056,7 +1061,7 @@ function LogsPageContent() {
                     className="group text-xs hover:bg-muted/20"
                   >
                     <TableCell className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
-                      {formatTsFromSeconds(log.createdAt, "未知时间")}
+                      {formatTsFromSeconds(log.createdAt, t("未知时间"))}
                     </TableCell>
                     <TableCell className="px-4 py-3 align-top">
                       <RequestRouteInfoCell log={log} />
@@ -1084,12 +1089,20 @@ function LogsPageContent() {
                     </TableCell>
                     <TableCell className="px-4 py-3 align-top">
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <span>总 {log.totalTokens?.toLocaleString() || 0}</span>
                         <span>
-                          输入 {log.inputTokens?.toLocaleString() || 0}
+                          {t("总 {value}", {
+                            value: log.totalTokens?.toLocaleString() || 0,
+                          })}
+                        </span>
+                        <span>
+                          {t("输入 {value}", {
+                            value: log.inputTokens?.toLocaleString() || 0,
+                          })}
                         </span>
                         <span className="opacity-60">
-                          缓存 {log.cachedInputTokens?.toLocaleString() || 0}
+                          {t("缓存 {value}", {
+                            value: log.cachedInputTokens?.toLocaleString() || 0,
+                          })}
                         </span>
                       </div>
                     </TableCell>
@@ -1106,12 +1119,12 @@ function LogsPageContent() {
 
       <div className="flex items-center justify-between px-2">
         <div className="text-xs text-muted-foreground">
-          共 {summary.filteredCount} 条匹配日志
+          {t("共 {count} 条匹配日志", { count: summary.filteredCount })}
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-xs text-muted-foreground">
-              每页显示
+              {t("每页显示")}
             </span>
             <Select
               value={pageSize}
@@ -1140,10 +1153,13 @@ function LogsPageContent() {
               disabled={currentPage <= 1}
               onClick={() => setPage(Math.max(1, currentPage - 1))}
             >
-              上一页
+              {t("上一页")}
             </Button>
             <div className="min-w-[68px] text-center text-xs font-medium">
-              第 {currentPage} / {totalPages} 页
+              {t("第 {page} / {totalPages} 页", {
+                page: currentPage,
+                totalPages,
+              })}
             </div>
             <Button
               variant="outline"
@@ -1152,7 +1168,7 @@ function LogsPageContent() {
               disabled={currentPage >= totalPages}
               onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
             >
-              下一页
+              {t("下一页")}
             </Button>
           </div>
         </div>
@@ -1161,9 +1177,9 @@ function LogsPageContent() {
       <ConfirmDialog
         open={clearConfirmOpen}
         onOpenChange={setClearConfirmOpen}
-        title="清空请求日志"
-        description="确定清空全部请求日志吗？该操作不可恢复。"
-        confirmText="清空"
+        title={t("清空请求日志")}
+        description={t("确定清空全部请求日志吗？该操作不可恢复。")}
+        confirmText={t("清空")}
         confirmVariant="destructive"
         onConfirm={() => clearMutation.mutate()}
       />

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
+import { useI18n } from "@/hooks/useI18n";
 import { accountClient } from "@/lib/api/account-client";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { copyTextToClipboard } from "@/lib/utils/clipboard";
@@ -60,6 +61,7 @@ interface ApiKeyModalProps {
 }
 
 export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
+  const { t } = useI18n();
   const serviceStatus = useAppStore((state) => state.serviceStatus);
   const { canAccessManagementRpc } = useRuntimeCapabilities();
   const [name, setName] = useState("");
@@ -77,8 +79,8 @@ export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
   const queryClient = useQueryClient();
   const isServiceReady = canAccessManagementRpc && serviceStatus.connected;
   const unavailableMessage = canAccessManagementRpc
-    ? "服务未连接，平台密钥与模型配置暂不可编辑；连接恢复后可继续操作。"
-    : "当前运行环境暂不支持平台密钥管理。";
+    ? t("服务未连接，平台密钥与模型配置暂不可编辑；连接恢复后可继续操作。")
+    : t("当前运行环境暂不支持平台密钥管理。");
 
   const { data: models } = useQuery({
     queryKey: ["apikey-models"],
@@ -139,8 +141,8 @@ export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
     if (!isServiceReady) {
       toast.info(
         canAccessManagementRpc
-          ? "服务未连接，暂时无法保存平台密钥"
-          : "当前运行环境暂不支持平台密钥管理",
+          ? t("服务未连接，暂时无法保存平台密钥")
+          : t("当前运行环境暂不支持平台密钥管理。"),
       );
       return;
     }
@@ -174,11 +176,11 @@ export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
 
       if (apiKey?.id) {
         await accountClient.updateApiKey(apiKey.id, params);
-        toast.success("密钥配置已更新");
+        toast.success(t("密钥配置已更新"));
       } else {
         const result = await accountClient.createApiKey(params);
         setGeneratedKey(result.key);
-        toast.success("平台密钥已创建");
+        toast.success(t("平台密钥已创建"));
       }
 
       await Promise.all([
@@ -189,7 +191,9 @@ export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
       if (apiKey?.id) onOpenChange(false);
     } catch (err: unknown) {
       toast.error(
-        `操作失败: ${err instanceof Error ? err.message : String(err)}`,
+        t("操作失败: {message}", {
+          message: err instanceof Error ? err.message : String(err),
+        }),
       );
     } finally {
       setIsLoading(false);
@@ -199,7 +203,7 @@ export function ApiKeyModal({ open, onOpenChange, apiKey }: ApiKeyModalProps) {
   const copyKey = async () => {
     try {
       await copyTextToClipboard(generatedKey);
-      toast.success("密钥已复制");
+      toast.success(t("密钥已复制"));
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : String(error));
     }

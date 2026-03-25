@@ -1,5 +1,6 @@
 import { invoke as tauriInvoke, isTauri as tauriIsTauri } from "@tauri-apps/api/core";
 import { fetchWithRetry, runWithControl, RequestOptions } from "../utils/request";
+import { getRuntimeUiLocale, translateText } from "../i18n";
 import {
   buildDesktopRuntimeCapabilities,
   buildUnsupportedWebCapabilities,
@@ -254,7 +255,7 @@ export async function loadRuntimeCapabilities(
 
 export function getAppErrorMessage(
   error: unknown,
-  fallback = "操作失败"
+  fallback = translateText(getRuntimeUiLocale(), "操作失败")
 ): string {
   if (error instanceof Error) {
     const nested = getAppErrorMessage(error.message, "");
@@ -277,7 +278,9 @@ function resolveRpcErrorMessage(error: unknown): string {
   if (record?.message && typeof record.message === "string") {
     return record.message;
   }
-  return error ? JSON.stringify(error) : "RPC 请求失败";
+  return error
+    ? JSON.stringify(error)
+    : translateText(getRuntimeUiLocale(), "RPC 请求失败");
 }
 
 function throwIfBusinessError(payload: unknown): void {

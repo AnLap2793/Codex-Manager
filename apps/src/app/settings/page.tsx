@@ -9,6 +9,7 @@ import { getAppErrorMessage } from "@/lib/api/transport";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { useDesktopPageActive } from "@/hooks/useDesktopPageActive";
 import { useDeferredDesktopActivation } from "@/hooks/useDeferredDesktopActivation";
+import { useI18n } from "@/hooks/useI18n";
 import { usePageTransitionReady } from "@/hooks/usePageTransitionReady";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import {
@@ -16,6 +17,7 @@ import {
   applyAppearancePreset,
   normalizeAppearancePreset,
 } from "@/lib/appearance";
+import { type UiLocale } from "@/lib/i18n";
 import { AppSettings, BackgroundTaskSettings } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -53,6 +55,7 @@ import {
   FolderOpen,
   Globe,
   Info,
+  Languages,
   Palette,
   RefreshCw,
   RotateCcw,
@@ -294,6 +297,7 @@ export default function SettingsPage() {
   const setStoreSettings = useAppStore((state) => state.setAppSettings);
   const storedSettings = useAppStore((state) => state.appSettings);
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t, tl } = useI18n();
   const queryClient = useQueryClient();
   const {
     isDesktopRuntime,
@@ -326,6 +330,33 @@ export default function SettingsPage() {
     useState<string | null>(null);
   const [lastUpdateCheck, setLastUpdateCheck] =
     useState<UpdateCheckSummary | null>(null);
+
+  const uiLanguageOptions: Array<{ value: UiLocale; label: string }> = [
+    {
+      value: "zh-CN",
+      label: tl({
+        "zh-CN": "简体中文",
+        en: "Chinese (Simplified)",
+        vi: "Tiếng Trung giản thể",
+      }),
+    },
+    {
+      value: "en",
+      label: tl({
+        "zh-CN": "英语",
+        en: "English",
+        vi: "Tiếng Anh",
+      }),
+    },
+    {
+      value: "vi",
+      label: tl({
+        "zh-CN": "越南语",
+        en: "Vietnamese",
+        vi: "Tiếng Việt",
+      }),
+    },
+  ];
   const [updateDialogCheck, setUpdateDialogCheck] =
     useState<UpdateCheckSummary | null>(null);
   const [preparedUpdate, setPreparedUpdate] =
@@ -341,6 +372,10 @@ export default function SettingsPage() {
   const [backgroundTaskDraft, setBackgroundTaskDraft] = useState<
     Record<string, string>
   >({});
+  const routeStrategyOptions = [
+    { value: "ordered", label: t("顺序优先 (Ordered)") },
+    { value: "balanced", label: t("均衡轮询 (Balanced)") },
+  ];
 
   const { data: fetchedSnapshot, isError: isSnapshotError } = useQuery({
     queryKey: ["app-settings-snapshot"],
@@ -369,11 +404,13 @@ export default function SettingsPage() {
       }
       applyAppearancePreset(nextSnapshot.appearancePreset);
       if (!variables._silent) {
-        toast.success("设置已更新");
+        toast.success(t("设置已更新"));
       }
     },
     onError: (error: unknown) => {
-      toast.error(`更新失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("更新失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -394,7 +431,9 @@ export default function SettingsPage() {
         );
         if (!request?.silent) {
           toast.success(
-            `发现新版本 ${summary.latestVersion || summary.releaseTag || "可用"}，可立即下载更新`,
+            t("发现新版本 {value}，可立即下载更新", {
+              value: summary.latestVersion || summary.releaseTag || t("可用"),
+            }),
           );
         }
         return;
@@ -404,13 +443,17 @@ export default function SettingsPage() {
       if (!request?.silent) {
         toast.success(
           summary.reason
-            ? `已检查更新：${summary.reason}`
-            : `当前已是最新版本 ${summary.currentVersion || ""}`.trim(),
+            ? t("已检查更新：{value}", { value: summary.reason })
+            : t("当前已是最新版本 {value}", {
+                value: summary.currentVersion || "",
+              }).trim(),
         );
       }
     },
     onError: (error: unknown) => {
-      toast.error(`检查更新失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("检查更新失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
     onSettled: () => {
       if (manualUpdateCheckPendingRef.current) {
@@ -428,12 +471,18 @@ export default function SettingsPage() {
       setUpdateDialogOpen(true);
       toast.success(
         summary.isPortable
-          ? `更新已下载完成，确认后即可替换到 ${summary.latestVersion || "新版本"}`
-          : `更新包已下载完成，确认后开始替换到 ${summary.latestVersion || "新版本"}`,
+          ? t("更新已下载完成，确认后即可替换到 {value}", {
+              value: summary.latestVersion || t("新版本"),
+            })
+          : t("更新包已下载完成，确认后开始替换到 {value}", {
+              value: summary.latestVersion || t("新版本"),
+            }),
       );
     },
     onError: (error: unknown) => {
-      toast.error(`下载更新失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("下载更新失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -450,12 +499,16 @@ export default function SettingsPage() {
       const message = readStringField(asRecord(result) ?? {}, "message");
       toast.success(
         message ||
-          (payload.isPortable ? "即将重启并替换更新" : "已开始替换更新流程"),
+          (payload.isPortable ? t("即将重启并替换更新") : t("已开始替换更新流程")),
       );
     },
     onError: (error: unknown, payload) => {
       toast.error(
-        `${payload.isPortable ? "替换更新" : "启动安装程序"}失败: ${getAppErrorMessage(error)}`,
+        payload.isPortable
+          ? t("替换更新失败: {message}", { message: getAppErrorMessage(error) })
+          : t("启动安装程序失败: {message}", {
+              message: getAppErrorMessage(error),
+            }),
       );
     },
   });
@@ -548,7 +601,9 @@ export default function SettingsPage() {
     void appClient
       .openInBrowser(buildReleaseUrl(updateDialogCheck ?? lastUpdateCheck))
       .catch((error) => {
-        toast.error(`打开发布页失败: ${getAppErrorMessage(error)}`);
+        toast.error(
+          t("打开发布页失败: {message}", { message: getAppErrorMessage(error) }),
+        );
       });
   };
 
@@ -566,28 +621,28 @@ export default function SettingsPage() {
     canOpenLocalDir && (preparedUpdate || lastUpdateCheck),
   );
   const updateActionLabel = hasPreparedUpdate
-    ? "替换更新"
+    ? t("替换更新")
     : canDownloadUpdate
-      ? "下载更新"
-      : "检查更新";
+      ? t("下载更新")
+      : t("检查更新");
   const updateActionDescription = !canSelfUpdate
-    ? "Web / Docker 版不提供桌面应用更新检查"
+    ? t("Web / Docker 版不提供桌面应用更新检查")
     : hasPreparedUpdate
-      ? "更新包已下载完成，点击后确认替换当前版本"
+      ? t("更新包已下载完成，点击后确认替换当前版本")
       : canDownloadUpdate
-        ? "已发现新版本，点击后开始下载更新包"
-        : "立即检查 GitHub Releases 是否有新版本可用";
+        ? t("已发现新版本，点击后开始下载更新包")
+        : t("立即检查 GitHub Releases 是否有新版本可用");
   const updateActionBusy = Boolean(
     manualUpdateCheckPending ||
     prepareUpdate.isPending ||
     applyPreparedUpdate.isPending,
   );
   const updateActionBusyLabel = manualUpdateCheckPending
-    ? "正在检查..."
+    ? t("正在检查...")
     : prepareUpdate.isPending
-      ? "正在下载..."
+      ? t("正在下载...")
       : applyPreparedUpdate.isPending
-        ? "正在替换..."
+        ? t("正在替换...")
         : updateActionLabel;
 
   const handleUpdateAction = () => {
@@ -610,7 +665,9 @@ export default function SettingsPage() {
     void appClient
       .openUpdateLogsDir(preparedUpdate?.assetPath)
       .catch((error) => {
-        toast.error(`打开日志目录失败: ${getAppErrorMessage(error)}`);
+        toast.error(
+          t("打开日志目录失败: {message}", { message: getAppErrorMessage(error) }),
+        );
       });
   };
 
@@ -768,7 +825,7 @@ export default function SettingsPage() {
   ) => {
     const nextValue = parseIntegerInput(transportInputValues[key], minimum);
     if (nextValue == null) {
-      toast.error("请输入合法的数值");
+      toast.error(t("请输入合法的数值"));
       setTransportDraft((current) => {
         const nextDraft = { ...current };
         delete nextDraft[key];
@@ -799,7 +856,7 @@ export default function SettingsPage() {
       stringifyNumber(snapshot.backgroundTasks[key] as number);
     const nextValue = parseIntegerInput(sourceValue, minimum);
     if (nextValue == null) {
-      toast.error("请输入合法的数值");
+      toast.error(t("请输入合法的数值"));
       setBackgroundTaskDraft((current) => {
         const nextDraft = { ...current };
         delete nextDraft[draftKey];
@@ -862,7 +919,7 @@ export default function SettingsPage() {
   if ((canAccessManagementRpc && !isSnapshotQueryEnabled) || !snapshot) {
     return (
       <div className="flex h-64 items-center justify-center text-muted-foreground">
-        加载配置中...
+        {t("加载配置中...")}
       </div>
     );
   }
@@ -870,9 +927,9 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold tracking-tight">系统设置</h2>
+        <h2 className="text-xl font-bold tracking-tight">{t("系统设置")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          管理应用行为、网关策略及后台任务
+          {t("管理应用行为、网关策略及后台任务")}
         </p>
       </div>
 
@@ -887,19 +944,19 @@ export default function SettingsPage() {
       >
         <TabsList className="glass-card mb-6 flex h-11 w-full justify-start overflow-x-auto rounded-xl border-none p-1 no-scrollbar lg:w-fit">
           <TabsTrigger value="general" className="gap-2 px-5 shrink-0">
-            <SettingsIcon className="h-4 w-4" /> 通用
+            <SettingsIcon className="h-4 w-4" /> {t("通用")}
           </TabsTrigger>
           <TabsTrigger value="appearance" className="gap-2 px-5 shrink-0">
-            <Palette className="h-4 w-4" /> 外观
+            <Palette className="h-4 w-4" /> {t("外观")}
           </TabsTrigger>
           <TabsTrigger value="gateway" className="gap-2 px-5 shrink-0">
-            <Globe className="h-4 w-4" /> 网关
+            <Globe className="h-4 w-4" /> {t("网关")}
           </TabsTrigger>
           <TabsTrigger value="tasks" className="gap-2 px-5 shrink-0">
-            <Cpu className="h-4 w-4" /> 任务
+            <Cpu className="h-4 w-4" /> {t("任务")}
           </TabsTrigger>
           <TabsTrigger value="env" className="gap-2 px-5 shrink-0">
-            <Variable className="h-4 w-4" /> 环境
+            <Variable className="h-4 w-4" /> {t("环境")}
           </TabsTrigger>
         </TabsList>
 
@@ -908,16 +965,16 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AppWindow className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">基础设置</CardTitle>
+                <CardTitle className="text-base">{t("基础设置")}</CardTitle>
               </div>
-              <CardDescription>控制应用启动和窗口行为</CardDescription>
+              <CardDescription>{t("控制应用启动和窗口行为")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>自动检查更新</Label>
+                  <Label>{t("自动检查更新")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    启动时自动检测新版本
+                    {t("启动时自动检测新版本")}
                   </p>
                 </div>
                 <Switch
@@ -936,11 +993,23 @@ export default function SettingsPage() {
                   {lastUpdateCheck ? (
                     <p className="text-xs text-muted-foreground">
                       {preparedUpdate
-                        ? `已下载 ${preparedUpdate.latestVersion || preparedUpdate.releaseTag || "新版本"}，等待替换更新`
+                        ? t("已下载 {value}，等待替换更新", {
+                            value:
+                              preparedUpdate.latestVersion ||
+                              preparedUpdate.releaseTag ||
+                              t("新版本"),
+                          })
                         : lastUpdateCheck.hasUpdate
-                          ? `发现新版本 ${lastUpdateCheck.latestVersion || lastUpdateCheck.releaseTag || "可用"}`
+                          ? t("发现新版本 {value}", {
+                              value:
+                                lastUpdateCheck.latestVersion ||
+                                lastUpdateCheck.releaseTag ||
+                                t("可用"),
+                            })
                           : lastUpdateCheck.reason ||
-                            `当前版本 ${lastUpdateCheck.currentVersion || "未知"} 已是最新`}
+                            t("当前版本 {value} 已是最新", {
+                              value: lastUpdateCheck.currentVersion || t("未知"),
+                            })}
                     </p>
                   ) : null}
                   {shouldShowUpdateLogsEntry ? (
@@ -952,7 +1021,7 @@ export default function SettingsPage() {
                         onClick={handleOpenUpdateLogsDir}
                       >
                         <FolderOpen className="h-3.5 w-3.5" />
-                        打开日志目录
+                        {t("打开日志目录")}
                       </Button>
                     </div>
                   ) : null}
@@ -981,9 +1050,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>关闭时最小化到托盘</Label>
+                  <Label>{t("关闭时最小化到托盘")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    点击关闭按钮不会直接退出程序
+                    {t("点击关闭按钮不会直接退出程序")}
                   </p>
                 </div>
                 <Switch
@@ -996,9 +1065,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>视觉性能模式</Label>
+                  <Label>{t("视觉性能模式")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    关闭毛玻璃等特效以提升低配电脑性能
+                    {t("关闭毛玻璃等特效以提升低配电脑性能")}
                   </p>
                 </div>
                 <Switch
@@ -1015,16 +1084,15 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">服务监听</CardTitle>
+                <CardTitle className="text-base">{t("服务监听")}</CardTitle>
               </div>
               <CardDescription>
-                统一控制 Service 与 Web
-                的监听模式，决定仅本机访问还是开放给局域网
+                {t("统一控制 Service 与 Web 的监听模式，决定仅本机访问还是开放给局域网")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-2">
-                <Label>监听地址</Label>
+                <Label>{t("监听地址")}</Label>
                 <Select
                   value={snapshot.serviceListenMode || "loopback"}
                   onValueChange={(value) => {
@@ -1035,14 +1103,16 @@ export default function SettingsPage() {
                     updateSettings.mutate({ serviceListenMode: nextValue });
                   }}
                 >
-                  <SelectTrigger className="w-full md:w-[320px]">
-                    <SelectValue placeholder="选择监听地址模式">
+                  <SelectTrigger className="h-auto min-h-10 w-full md:w-[320px]">
+                    <SelectValue placeholder={t("选择监听地址模式")}>
                       {(value) =>
-                        SERVICE_LISTEN_MODE_LABELS[
-                          String(value || "").trim()
-                        ] ||
-                        String(value || "").trim() ||
-                        "仅本机 (localhost)"
+                        t(
+                          SERVICE_LISTEN_MODE_LABELS[
+                            String(value || "").trim()
+                          ] ||
+                            String(value || "").trim() ||
+                            "仅本机 (localhost)",
+                        )
                       }
                     </SelectValue>
                   </SelectTrigger>
@@ -1052,7 +1122,7 @@ export default function SettingsPage() {
                       : ["loopback", "all_interfaces"]
                     ).map((mode) => (
                       <SelectItem key={mode} value={mode}>
-                        {SERVICE_LISTEN_MODE_LABELS[mode] || mode}
+                        {t(SERVICE_LISTEN_MODE_LABELS[mode] || mode)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1061,13 +1131,13 @@ export default function SettingsPage() {
 
               <div className="rounded-2xl border border-border/50 bg-background/45 p-4 text-sm">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">当前访问地址</span>
+                  <span className="text-muted-foreground">{t("当前访问地址")}</span>
                   <code className="text-xs text-primary">
                     {snapshot.serviceAddr}
                   </code>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">实际监听地址</span>
+                  <span className="text-muted-foreground">{t("实际监听地址")}</span>
                   <code className="text-xs text-primary">
                     {inferServiceBindPreview(
                       snapshot.serviceAddr,
@@ -1078,9 +1148,7 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-[10px] text-muted-foreground">
-                切换到 <code>0.0.0.0</code> 后，局域网设备可通过当前机器 IP
-                访问； 设置保存后需要重启相关进程才会生效，Web
-                监听地址会默认跟随这里的模式。
+                {t("切换到 0.0.0.0 后，局域网设备可通过当前机器 IP 访问；设置保存后需要重启相关进程才会生效，Web 监听地址会默认跟随这里的模式。")}
               </p>
             </CardContent>
           </Card>
@@ -1091,9 +1159,11 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">样式版本</CardTitle>
+                <CardTitle className="text-base">{t("样式版本")}</CardTitle>
               </div>
-              <CardDescription>在渐变版本和默认版本之间切换</CardDescription>
+              <CardDescription className="break-words">
+                {t("在渐变版本和默认版本之间切换")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
@@ -1116,10 +1186,10 @@ export default function SettingsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1.5">
                           <div className="text-sm font-semibold">
-                            {item.name}
+                            {t(item.name)}
                           </div>
                           <p className="text-xs leading-5 text-muted-foreground">
-                            {item.description}
+                            {t(item.description)}
                           </p>
                         </div>
                         {isActive ? (
@@ -1167,20 +1237,20 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">界面主题</CardTitle>
+                <CardTitle className="text-base">{t("界面主题")}</CardTitle>
               </div>
-              <CardDescription>
-                选择您喜爱的配色方案，适配不同工作心情
+              <CardDescription className="break-words">
+                {t("选择您喜爱的配色方案，适配不同工作心情")}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-12">
                 {THEMES.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleThemeChange(item.id)}
                     className={cn(
-                      "group relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 transition-all duration-300 hover:scale-105",
+                      "group relative flex min-h-[118px] flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition-all duration-300 hover:scale-105",
                       theme === item.id
                         ? "border-primary bg-primary/10 shadow-lg ring-1 ring-primary"
                         : "border-transparent bg-muted/20 hover:bg-accent/40",
@@ -1192,13 +1262,13 @@ export default function SettingsPage() {
                     />
                     <span
                       className={cn(
-                        "whitespace-nowrap text-[10px] font-semibold transition-colors",
+                        "max-w-full break-words text-[10px] leading-tight font-semibold transition-colors",
                         theme === item.id
                           ? "text-primary"
                           : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
-                      {item.name}
+                      {t(item.name)}
                     </span>
                     {theme === item.id ? (
                       <div className="absolute right-2 top-2 rounded-full bg-primary p-0.5 text-primary-foreground shadow-sm">
@@ -1210,48 +1280,99 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="glass-card border-none shadow-md">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Languages className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">{t("界面语言")}</CardTitle>
+              </div>
+              <CardDescription className="break-words">
+                {t("切换桌面界面的显示语言")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Select
+                value={locale}
+                onValueChange={(value) => value && setLocale(value as UiLocale)}
+              >
+                <SelectTrigger className="h-auto min-h-10 w-full md:w-[320px]">
+                  <SelectValue placeholder={t("界面语言")}>
+                    {(value) => (
+                      <span className="block truncate text-left">
+                        {uiLanguageOptions.find((item) => item.value === value)
+                          ?.label || uiLanguageOptions[0].label}
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {uiLanguageOptions.map((item) => (
+                    <SelectItem
+                      key={item.value}
+                      value={item.value}
+                      className="whitespace-normal"
+                    >
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t("跟随系统设置或手动选择常用语言")}
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="gateway" className="space-y-4">
           <Card className="glass-card border-none shadow-md">
             <CardHeader>
-              <CardTitle className="text-base">网关策略</CardTitle>
-              <CardDescription>配置账号选路和请求头处理方式</CardDescription>
+              <CardTitle className="text-base">{t("网关策略")}</CardTitle>
+              <CardDescription className="break-words">
+                {t("配置账号选路和请求头处理方式")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-2">
-                <Label>账号选路策略</Label>
+                <Label>{t("账号选路策略")}</Label>
                 <Select
                   value={snapshot.routeStrategy || "ordered"}
                   onValueChange={(value) =>
                     updateSettings.mutate({ routeStrategy: value || "ordered" })
                   }
                 >
-                  <SelectTrigger className="w-full md:w-[300px]">
-                    <SelectValue placeholder="选择策略">
+                  <SelectTrigger className="h-auto min-h-10 w-full md:w-[300px]">
+                    <SelectValue placeholder={t("选择策略")}>
                       {(value) => {
                         const nextValue = String(value || "").trim();
-                        if (!nextValue) return "选择策略";
-                        return ROUTE_STRATEGY_LABELS[nextValue] || nextValue;
+                        const nextLabel = !nextValue
+                          ? t("选择策略")
+                          : ROUTE_STRATEGY_LABELS[nextValue] || nextValue;
+                        return (
+                          <span className="block truncate text-left">
+                            {t(nextLabel)}
+                          </span>
+                        );
                       }}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ordered">顺序优先 (Ordered)</SelectItem>
+                    <SelectItem value="ordered">
+                      {t(routeStrategyOptions[0].label)}
+                    </SelectItem>
                     <SelectItem value="balanced">
-                      均衡轮询 (Balanced)
+                      {t(routeStrategyOptions[1].label)}
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">
-                  顺序优先：按账号候选顺序优先尝试，默认只会在头部小窗口内按健康度做轻微换头；
-                  均衡轮询：按“平台密钥 +
-                  模型”维度严格轮询可用账号，默认不做健康度换头。
+                  {t("顺序优先：按账号候选顺序优先尝试，默认只会在头部小窗口内按健康度做轻微换头；均衡轮询：按“平台密钥 + 模型”维度严格轮询可用账号，默认不做健康度换头。")}
                 </p>
               </div>
 
               <div className="grid gap-2">
-                <Label>Free 账号使用模型</Label>
+                <Label>{t("Free 账号使用模型")}</Label>
                 <Select
                   value={snapshot.freeAccountMaxModel || "auto"}
                   onValueChange={(value) =>
@@ -1260,11 +1381,13 @@ export default function SettingsPage() {
                     })
                   }
                 >
-                  <SelectTrigger className="w-full md:w-[300px]">
-                    <SelectValue placeholder="选择 free 账号使用模型">
-                      {(value) =>
-                        formatFreeAccountModelLabel(String(value || ""))
-                      }
+                  <SelectTrigger className="h-auto min-h-10 w-full md:w-[300px]">
+                    <SelectValue placeholder={t("选择 free 账号使用模型")}>
+                      {(value) => (
+                        <span className="block truncate text-left">
+                          {formatFreeAccountModelLabel(String(value || ""))}
+                        </span>
+                      )}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -1279,18 +1402,15 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">
-                  设为“跟随请求”时，不会额外改写 free / 7天单窗口账号的模型；
-                  只有你选了具体模型后，命中这些账号时才会统一改写为该模型。
+                  {t("设为“跟随请求”时，不会额外改写 free / 7天单窗口账号的模型；只有你选了具体模型后，命中这些账号时才会统一改写为该模型。")}
                 </p>
               </div>
 
               <div className="flex items-center justify-between border-t pt-6">
                 <div className="space-y-0.5">
-                  <Label>请求体压缩</Label>
+                  <Label>{t("请求体压缩")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    对齐官方 Codex：流式 <code>/responses</code> 请求发往
-                    ChatGPT Codex backend 时，默认使用
-                    <code>zstd</code> 压缩请求体。
+                    {t("对齐官方 Codex：流式 /responses 请求发往 ChatGPT Codex backend 时，默认使用 zstd 压缩请求体。")}
                   </p>
                 </div>
                 <Switch
@@ -1327,13 +1447,12 @@ export default function SettingsPage() {
                   }}
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  对齐官方 Codex 的上游 Originator。默认值为{" "}
-                  <code>codex_cli_rs</code>，会同步影响登录和网关上游请求头。
+                  {t("对齐官方 Codex 的上游 Originator。默认值为 codex_cli_rs，会同步影响登录和网关上游请求头。")}
                 </p>
               </div>
 
               <div className="grid gap-2">
-                <Label>User-Agent 版本</Label>
+                <Label>{t("User-Agent 版本")}</Label>
                 <Input
                   className="h-10 max-w-md font-mono"
                   value={gatewayUserAgentVersionInput}
@@ -1358,8 +1477,7 @@ export default function SettingsPage() {
                   }}
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  控制真实出站 <code>User-Agent</code> 里的版本号，默认值为{" "}
-                  <code>0.101.0</code>。 官方 Codex 升级后，可以在这里手动同步。
+                  {t("控制真实出站 User-Agent 里的版本号，默认值为 0.101.0。官方 Codex 升级后，可以在这里手动同步。")}
                 </p>
               </div>
 
@@ -1377,15 +1495,17 @@ export default function SettingsPage() {
                     })
                   }
                 >
-                  <SelectTrigger className="w-full md:w-[300px]">
-                    <SelectValue placeholder="选择地域约束">
+                  <SelectTrigger className="h-auto min-h-10 w-full md:w-[300px]">
+                    <SelectValue placeholder={t("选择地域约束")}>
                       {(value) => {
                         const nextValue =
                           String(value || "") === EMPTY_RESIDENCY_OPTION
                             ? ""
                             : String(value || "");
                         return (
-                          RESIDENCY_REQUIREMENT_LABELS[nextValue] || nextValue
+                          t(
+                            RESIDENCY_REQUIREMENT_LABELS[nextValue] || nextValue,
+                          )
                         );
                       }}
                     </SelectValue>
@@ -1399,20 +1519,18 @@ export default function SettingsPage() {
                         key={value || EMPTY_RESIDENCY_OPTION}
                         value={value || EMPTY_RESIDENCY_OPTION}
                       >
-                        {RESIDENCY_REQUIREMENT_LABELS[value] || value}
+                        {t(RESIDENCY_REQUIREMENT_LABELS[value] || value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">
-                  对齐官方 Codex 的{" "}
-                  <code>x-openai-internal-codex-residency</code> 头。
-                  当前只支持留空或 <code>us</code>。
+                  {t("对齐官方 Codex 的 x-openai-internal-codex-residency 头。当前只支持留空或 us。")}
                 </p>
               </div>
 
               <div className="grid gap-2 pt-2">
-                <Label>上游代理 (Proxy)</Label>
+                <Label>{t("上游代理 (Proxy)")}</Label>
                 <Input
                   placeholder="http://127.0.0.1:7890"
                   className="h-10 max-w-md font-mono"
@@ -1435,13 +1553,13 @@ export default function SettingsPage() {
                   }}
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  支持 http/https/socks5，留空表示直连。
+                  {t("支持 http/https/socks5，留空表示直连。")}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-t pt-6">
                 <div className="grid gap-2">
-                  <Label>SSE 保活间隔 (ms)</Label>
+                  <Label>{t("SSE 保活间隔 (ms)")}</Label>
                   <Input
                     type="number"
                     value={transportInputValues.sseKeepaliveIntervalMs}
@@ -1457,7 +1575,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>上游流式超时 (ms)</Label>
+                  <Label>{t("上游流式超时 (ms)")}</Label>
                   <Input
                     type="number"
                     value={transportInputValues.upstreamStreamTimeoutMs}
@@ -1480,23 +1598,23 @@ export default function SettingsPage() {
         <TabsContent value="tasks" className="space-y-4">
           <Card className="glass-card border-none shadow-md">
             <CardHeader>
-              <CardTitle className="text-base">后台任务线程</CardTitle>
-              <CardDescription>管理自动轮询和保活任务；</CardDescription>
+              <CardTitle className="text-base">{t("后台任务线程")}</CardTitle>
+              <CardDescription>{t("管理自动轮询和保活任务；")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {[
                 {
-                  label: "用量轮询线程",
+                  label: t("用量轮询线程"),
                   enabledKey: "usagePollingEnabled",
                   intervalKey: "usagePollIntervalSecs",
                 },
                 {
-                  label: "网关保活线程",
+                  label: t("网关保活线程"),
                   enabledKey: "gatewayKeepaliveEnabled",
                   intervalKey: "gatewayKeepaliveIntervalSecs",
                 },
                 {
-                  label: "令牌刷新轮询",
+                  label: t("令牌刷新轮询"),
                   enabledKey: "tokenRefreshPollingEnabled",
                   intervalKey: "tokenRefreshPollIntervalSecs",
                 },
@@ -1522,7 +1640,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
-                      间隔(秒)
+                      {t("间隔(秒)")}
                     </span>
                     <Input
                       className="h-8 w-20"
@@ -1556,18 +1674,18 @@ export default function SettingsPage() {
 
           <Card className="glass-card border-none shadow-md">
             <CardHeader>
-              <CardTitle className="text-base">Worker 并发参数</CardTitle>
+              <CardTitle className="text-base">{t("Worker 并发参数")}</CardTitle>
               <CardDescription>
-                调整执行单元并发规模；用量刷新并发会直接影响手动刷新和后台轮询
+                {t("调整执行单元并发规模；用量刷新并发会直接影响手动刷新和后台轮询")}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {[
-                { label: "用量刷新并发", key: "usageRefreshWorkers" },
-                { label: "HTTP 因子", key: "httpWorkerFactor" },
-                { label: "HTTP 最小并发", key: "httpWorkerMin" },
-                { label: "流式因子", key: "httpStreamWorkerFactor" },
-                { label: "流式最小并发", key: "httpStreamWorkerMin" },
+                { label: t("用量刷新并发"), key: "usageRefreshWorkers" },
+                { label: t("HTTP 因子"), key: "httpWorkerFactor" },
+                { label: t("HTTP 最小并发"), key: "httpWorkerMin" },
+                { label: t("流式因子"), key: "httpStreamWorkerFactor" },
+                { label: t("流式最小并发"), key: "httpStreamWorkerMin" },
               ].map((worker) => (
                 <div key={worker.key} className="grid gap-1.5">
                   <Label className="text-xs">{worker.label}</Label>
@@ -1608,7 +1726,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="搜索变量..."
+                    placeholder={t("搜索变量...")}
                     className="h-9 pl-9"
                     value={envSearch}
                     onChange={(event) => setEnvSearch(event.target.value)}
@@ -1655,11 +1773,13 @@ export default function SettingsPage() {
                     <div className="rounded-lg border bg-accent/30 p-4 text-sm leading-relaxed text-muted-foreground">
                       <Info className="mr-2 inline-block h-4 w-4 text-primary" />
                       {ENV_DESCRIPTION_MAP[selectedEnvKey] ||
-                        `${selectedEnvItem?.label} 对应环境变量，修改后会应用到相关模块。`}
+                        t("{label} 对应环境变量，修改后会应用到相关模块。", {
+                          label: selectedEnvItem?.label || "",
+                        })}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>当前值</Label>
+                      <Label>{t("当前值")}</Label>
                       <Input
                         value={selectedEnvValue}
                         onChange={(event) => {
@@ -1670,26 +1790,26 @@ export default function SettingsPage() {
                           }));
                         }}
                         className="h-11 font-mono"
-                        placeholder="输入变量值"
+                        placeholder={t("输入变量值")}
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        默认值:{" "}
+                        {t("默认值:")}{" "}
                         <span className="font-mono italic">
-                          {selectedEnvItem?.defaultValue || "空"}
+                          {selectedEnvItem?.defaultValue || t("空")}
                         </span>
                       </p>
                     </div>
 
                     <div className="flex gap-3 border-t pt-4">
                       <Button onClick={handleSaveEnv} className="gap-2">
-                        <Save className="h-4 w-4" /> 保存修改
+                        <Save className="h-4 w-4" /> {t("保存修改")}
                       </Button>
                       <Button
                         variant="outline"
                         onClick={handleResetEnv}
                         className="gap-2"
                       >
-                        <RotateCcw className="h-4 w-4" /> 恢复默认
+                        <RotateCcw className="h-4 w-4" /> {t("恢复默认")}
                       </Button>
                     </div>
                   </CardContent>
@@ -1699,7 +1819,7 @@ export default function SettingsPage() {
                   <div className="rounded-full bg-accent/30 p-4">
                     <Variable className="h-12 w-12 opacity-20" />
                   </div>
-                  <p>请从左侧列表选择一个环境变量进行配置</p>
+                  <p>{t("请从左侧列表选择一个环境变量进行配置")}</p>
                 </CardContent>
               )}
             </Card>
@@ -1722,49 +1842,51 @@ export default function SettingsPage() {
         >
           <DialogHeader>
             <DialogTitle>
-              {preparedUpdate ? "替换更新" : "发现新版本"}
+              {preparedUpdate ? t("替换更新") : t("发现新版本")}
             </DialogTitle>
             <DialogDescription>
               {preparedUpdate
                 ? preparedUpdate.isPortable
-                  ? "更新包已下载完成。确认后将重启应用并替换当前程序。"
-                  : "更新包已下载完成。确认后会开始替换流程。"
-                : `当前版本 ${updateDialogCheck?.currentVersion || "未知"}，发现新版本 ${
-                    updateDialogCheck?.latestVersion ||
-                    updateDialogCheck?.releaseTag ||
-                    "可用"
-                  }。`}
+                  ? t("更新包已下载完成。确认后将重启应用并替换当前程序。")
+                  : t("更新包已下载完成。确认后会开始替换流程。")
+                : t("当前版本 {currentVersion}，发现新版本 {latestVersion}。", {
+                    currentVersion: updateDialogCheck?.currentVersion || t("未知"),
+                    latestVersion:
+                      updateDialogCheck?.latestVersion ||
+                      updateDialogCheck?.releaseTag ||
+                      t("可用"),
+                  })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 text-sm">
-            <div className="rounded-2xl border border-border/50 bg-background/45 p-4">
+              <div className="rounded-2xl border border-border/50 bg-background/45 p-4">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">当前版本</span>
+                <span className="text-muted-foreground">{t("当前版本")}</span>
                 <span className="font-medium">
-                  {updateDialogCheck?.currentVersion || "未知"}
+                  {updateDialogCheck?.currentVersion || t("未知")}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">目标版本</span>
+                <span className="text-muted-foreground">{t("目标版本")}</span>
                 <span className="font-medium">
                   {preparedUpdate?.latestVersion ||
                     updateDialogCheck?.latestVersion ||
                     updateDialogCheck?.releaseTag ||
-                    "未知"}
+                    t("未知")}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">更新模式</span>
+                <span className="text-muted-foreground">{t("更新模式")}</span>
                 <span className="font-medium">
                   {(preparedUpdate?.isPortable ?? updateDialogCheck?.isPortable)
-                    ? "便携包更新"
-                    : "安装包更新"}
+                    ? t("便携包更新")
+                    : t("安装包更新")}
                 </span>
               </div>
               {preparedUpdate?.assetName ? (
                 <div className="mt-2 flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">更新文件</span>
+                  <span className="text-muted-foreground">{t("更新文件")}</span>
                   <span className="max-w-[240px] truncate font-mono text-xs">
                     {preparedUpdate.assetName}
                   </span>
@@ -1778,7 +1900,7 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-border/50 bg-muted/40 p-4 text-xs leading-5 text-muted-foreground">
-                建议先下载更新包，下载完成后再执行安装或重启更新。
+                {t("建议先下载更新包，下载完成后再执行安装或重启更新。")}
               </div>
             )}
           </div>
@@ -1791,7 +1913,7 @@ export default function SettingsPage() {
               }
               onClick={() => setUpdateDialogOpen(false)}
             >
-              稍后
+              {t("稍后")}
             </Button>
             {preparedUpdate ? (
               <Button
@@ -1806,9 +1928,9 @@ export default function SettingsPage() {
                 <Download className="h-4 w-4" />
                 {applyPreparedUpdate.isPending
                   ? preparedUpdate.isPortable
-                    ? "正在替换更新..."
-                    : "正在启动替换..."
-                  : "替换更新"}
+                    ? t("正在替换更新...")
+                    : t("正在启动替换...")
+                  : t("替换更新")}
               </Button>
             ) : updateDialogCheck?.canPrepare ? (
               <Button
@@ -1817,12 +1939,12 @@ export default function SettingsPage() {
                 onClick={() => prepareUpdate.mutate()}
               >
                 <Download className="h-4 w-4" />
-                {prepareUpdate.isPending ? "正在下载更新..." : "下载更新"}
+                {prepareUpdate.isPending ? t("正在下载更新...") : t("下载更新")}
               </Button>
             ) : (
               <Button className="gap-2" onClick={handleOpenReleasePage}>
                 <ExternalLink className="h-4 w-4" />
-                打开发布页
+                {t("打开发布页")}
               </Button>
             )}
           </DialogFooter>

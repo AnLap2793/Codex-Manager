@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { accountClient } from "@/lib/api/account-client";
+import { useI18n } from "@/hooks/useI18n";
 import { copyTextToClipboard } from "@/lib/utils/clipboard";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
@@ -51,6 +52,7 @@ export function AggregateApiModal({
   aggregateApi,
   defaultSort = 0,
 }: AggregateApiModalProps) {
+  const { t } = useI18n();
   const serviceStatus = useAppStore((state) => state.serviceStatus);
   const { canAccessManagementRpc } = useRuntimeCapabilities();
   const [providerType, setProviderType] = useState("codex");
@@ -63,8 +65,8 @@ export function AggregateApiModal({
   const queryClient = useQueryClient();
   const isServiceReady = canAccessManagementRpc && serviceStatus.connected;
   const unavailableMessage = canAccessManagementRpc
-    ? "服务未连接，聚合 API 暂不可编辑；连接恢复后可继续操作。"
-    : "当前运行环境暂不支持聚合 API 管理。";
+    ? t("服务未连接，聚合 API 暂不可编辑；连接恢复后可继续操作。")
+    : t("当前运行环境暂不支持聚合 API 管理。");
 
   useEffect(() => {
     if (!open) return;
@@ -81,31 +83,31 @@ export function AggregateApiModal({
     if (!isServiceReady) {
       toast.info(
         canAccessManagementRpc
-          ? "服务未连接，暂时无法保存聚合 API"
-          : "当前运行环境暂不支持聚合 API 管理"
+          ? t("服务未连接，暂时无法保存聚合 API")
+          : t("当前运行环境暂不支持聚合 API 管理。")
       );
       return;
     }
     if (!url.trim()) {
-      toast.error("请输入聚合 API URL");
+      toast.error(t("请输入聚合 API URL"));
       return;
     }
     if (!supplierName.trim()) {
-      toast.error("请输入供应商名称");
+      toast.error(t("请输入供应商名称"));
       return;
     }
     const rawSort = sortDraft.trim();
     if (!rawSort) {
-      toast.error("请输入顺序值");
+      toast.error(t("请输入顺序值"));
       return;
     }
     const parsedSort = Number(rawSort);
     if (!Number.isFinite(parsedSort)) {
-      toast.error("顺序必须是数字");
+      toast.error(t("顺序必须是数字"));
       return;
     }
     if (!aggregateApi?.id && !key.trim()) {
-      toast.error("请输入聚合 API 密钥");
+      toast.error(t("请输入聚合 API 密钥"));
       return;
     }
 
@@ -119,7 +121,7 @@ export function AggregateApiModal({
           url,
           key: key || null,
         });
-        toast.success("聚合 API 已更新");
+        toast.success(t("聚合 API 已更新"));
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] }),
           queryClient.invalidateQueries({ queryKey: ["apikeys"] }),
@@ -137,7 +139,7 @@ export function AggregateApiModal({
         key,
       });
       setGeneratedKey(result.key);
-      toast.success("聚合 API 已创建");
+      toast.success(t("聚合 API 已创建"));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] }),
         queryClient.invalidateQueries({ queryKey: ["apikeys"] }),
@@ -146,7 +148,9 @@ export function AggregateApiModal({
       onOpenChange(false);
     } catch (error: unknown) {
       toast.error(
-        `操作失败: ${error instanceof Error ? error.message : String(error)}`
+        t("操作失败: {message}", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
       );
     } finally {
       setIsLoading(false);
@@ -156,7 +160,7 @@ export function AggregateApiModal({
   const copyKey = async () => {
     try {
       await copyTextToClipboard(generatedKey);
-      toast.success("密钥已复制");
+      toast.success(t("密钥已复制"));
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -171,11 +175,11 @@ export function AggregateApiModal({
               <Database className="h-5 w-5 text-primary" />
             </div>
             <DialogTitle>
-              {aggregateApi?.id ? "编辑聚合 API" : "创建聚合 API"}
+              {aggregateApi?.id ? t("编辑聚合 API") : t("创建聚合 API")}
             </DialogTitle>
           </div>
           <DialogDescription>
-            配置一个最小转发上游，保存 URL 和密钥后即可用于平台密钥轮转。
+            {t("配置一个最小转发上游，保存 URL 和密钥后即可用于平台密钥轮转。")}
           </DialogDescription>
         </DialogHeader>
 
@@ -187,10 +191,10 @@ export function AggregateApiModal({
           ) : null}
 
           <div className="grid gap-2">
-            <Label htmlFor="aggregate-api-supplier-name">供应商名称 *</Label>
+            <Label htmlFor="aggregate-api-supplier-name">{t("供应商名称 *")}</Label>
             <Input
               id="aggregate-api-supplier-name"
-              placeholder="例如：官方中转、XX 供应商"
+              placeholder={t("例如：官方中转、XX 供应商")}
               value={supplierName}
               disabled={!isServiceReady}
               onChange={(event) => setSupplierName(event.target.value)}
@@ -198,7 +202,7 @@ export function AggregateApiModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="aggregate-api-sort">顺序值</Label>
+            <Label htmlFor="aggregate-api-sort">{t("顺序值")}</Label>
             <Input
               id="aggregate-api-sort"
               type="number"
@@ -209,12 +213,12 @@ export function AggregateApiModal({
               onChange={(event) => setSortDraft(event.target.value)}
             />
             <p className="text-[11px] leading-4 text-muted-foreground">
-              值越小越靠前，用于聚合 API 轮转优先级
+              {t("值越小越靠前，用于聚合 API 轮转优先级")}
             </p>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="aggregate-api-provider">类型</Label>
+            <Label htmlFor="aggregate-api-provider">{t("类型")}</Label>
             <Select
               value={providerType}
               disabled={!isServiceReady}
@@ -239,7 +243,7 @@ export function AggregateApiModal({
             <Label htmlFor="aggregate-api-url">URL</Label>
             <Input
               id="aggregate-api-url"
-              placeholder={AGGREGATE_API_URL_PLACEHOLDERS[providerType] || "请输入 URL"}
+              placeholder={AGGREGATE_API_URL_PLACEHOLDERS[providerType] || t("请输入 URL")}
               value={url}
               disabled={!isServiceReady}
               onChange={(event) => setUrl(event.target.value)}
@@ -247,11 +251,11 @@ export function AggregateApiModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="aggregate-api-key">密钥</Label>
+            <Label htmlFor="aggregate-api-key">{t("密钥")}</Label>
             <Input
               id="aggregate-api-key"
               type="password"
-              placeholder={aggregateApi?.id ? "留空则保持原值" : "请输入密钥"}
+              placeholder={aggregateApi?.id ? t("留空则保持原值") : t("请输入密钥")}
               value={key}
               disabled={!isServiceReady}
               onChange={(event) => setKey(event.target.value)}
@@ -261,7 +265,7 @@ export function AggregateApiModal({
           {generatedKey ? (
             <div className="space-y-2 pt-2 border-t">
               <Label className="text-xs text-primary flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5" /> 新密钥已生成
+                <ShieldCheck className="h-3.5 w-3.5" /> {t("新密钥已生成")}
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -284,12 +288,12 @@ export function AggregateApiModal({
         <DialogFooter>
           {!generatedKey ? (
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              取消
+              {t("取消")}
             </Button>
           ) : null}
           {!generatedKey ? (
             <Button onClick={() => void handleSave()} disabled={!isServiceReady || isLoading}>
-              {isLoading ? "保存中..." : "完成"}
+              {isLoading ? t("保存中...") : t("完成")}
             </Button>
           ) : null}
         </DialogFooter>

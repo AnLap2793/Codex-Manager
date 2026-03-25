@@ -9,20 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DisclaimerTicker } from "@/components/layout/disclaimer-ticker";
 import { WebPasswordModal } from "../modals/web-password-modal";
 import { serviceClient } from "@/lib/api/service-client";
 import { appClient } from "@/lib/api/app-client";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { useI18n } from "@/hooks/useI18n";
-import { type UiLocale } from "@/lib/i18n";
 import {
   formatServiceError,
   isExpectedInitializeResult,
@@ -38,13 +30,7 @@ export function Header() {
   const [isToggling, setIsToggling] = useState(false);
   const [portInput, setPortInput] = useState("48760");
   const { canManageService } = useRuntimeCapabilities();
-  const { t, locale, setLocale } = useI18n();
-
-  const languageLabelMap: Record<UiLocale, string> = {
-    "zh-CN": "简体中文",
-    en: "English",
-    vi: "Tiếng Việt",
-  };
+  const { t } = useI18n();
 
   useEffect(() => {
     const current = String(serviceStatus.addr || DEFAULT_SERVICE_ADDR);
@@ -121,9 +107,9 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 glass-header px-6">
-        <div className="flex min-w-0 shrink-0 items-center gap-4">
-          <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
+      <header className="sticky top-0 z-30 flex min-h-16 flex-wrap items-center gap-3 glass-header px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <h1 className="truncate text-lg font-semibold">{getPageTitle()}</h1>
           <Badge variant={serviceStatus.connected ? "default" : "secondary"} className="h-5">
             {serviceStatus.connected ? t("服务已连接") : t("服务未连接")}
           </Badge>
@@ -136,32 +122,14 @@ export function Header() {
           <DisclaimerTicker />
         </div>
 
-        <div className="flex shrink-0 items-center gap-4">
-          <Select
-            value={locale}
-            onValueChange={(value) => value && setLocale(value as UiLocale)}
-          >
-            <SelectTrigger className="h-9 w-[132px] bg-card/30 text-xs">
-              <SelectValue>
-                {(value) => languageLabelMap[(value as UiLocale) || locale]}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent align="end">
-              {(["zh-CN", "en", "vi"] as UiLocale[]).map((value) => (
-                <SelectItem key={value} value={value}>
-                  {languageLabelMap[value]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-3">
           {canManageService ? (
-            <div className="flex items-center gap-2 rounded-lg border bg-card/30 px-3 py-1.5 shadow-sm">
-              <span className="text-xs font-medium text-muted-foreground">
+            <div className="flex max-w-full items-center gap-2 rounded-lg border bg-card/30 px-3 py-1.5 shadow-sm">
+              <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
                 {t("监听端口")}
               </span>
               <Input
-                className="h-7 w-16 border-none bg-transparent p-0 text-xs font-mono focus-visible:ring-0"
+                className="h-7 w-14 border-none bg-transparent p-0 text-xs font-mono focus-visible:ring-0 sm:w-16"
                 placeholder="48760"
                 value={portInput}
                 onChange={(event) => {
@@ -190,7 +158,7 @@ export function Header() {
             onClick={() => setWebPasswordModalOpen(true)}
           >
             <SettingsIcon className="h-3.5 w-3.5" />
-            <span className="text-xs">{t("密码")}</span>
+            <span className="whitespace-nowrap text-xs">{t("密码")}</span>
           </Button>
         </div>
       </header>

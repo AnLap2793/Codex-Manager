@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/startup-snapshot";
 import { getAppErrorMessage } from "@/lib/api/transport";
 import { useDeferredDesktopActivation } from "@/hooks/useDeferredDesktopActivation";
+import { useI18n } from "@/hooks/useI18n";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { StartupSnapshot } from "@/types";
@@ -16,6 +17,7 @@ import { StartupSnapshot } from "@/types";
 type ApiKeyPayload = Parameters<typeof accountClient.createApiKey>[0];
 
 export function useApiKeys() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const serviceStatus = useAppStore((state) => state.serviceStatus);
   const { canAccessManagementRpc } = useRuntimeCapabilities();
@@ -36,7 +38,11 @@ export function useApiKeys() {
     if (isServiceReady) {
       return true;
     }
-    toast.info(`服务未连接，暂时无法${actionLabel}`);
+    toast.info(
+      t("服务未连接，暂时无法{actionLabel}", {
+        actionLabel: t(actionLabel),
+      }),
+    );
     return false;
   };
 
@@ -71,10 +77,12 @@ export function useApiKeys() {
     mutationFn: (params: ApiKeyPayload) => accountClient.createApiKey(params),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("密钥已创建");
+      toast.success(t("密钥已创建"));
     },
     onError: (error: unknown) => {
-      toast.error(`创建失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("创建失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -82,10 +90,12 @@ export function useApiKeys() {
     mutationFn: (id: string) => accountClient.deleteApiKey(id),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("密钥已删除");
+      toast.success(t("密钥已删除"));
     },
     onError: (error: unknown) => {
-      toast.error(`删除失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("删除失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -109,10 +119,12 @@ export function useApiKeys() {
           : current,
       );
       await invalidateAll();
-      toast.success("密钥配置已更新");
+      toast.success(t("密钥配置已更新"));
     },
     onError: (error: unknown) => {
-      toast.error(`更新失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("更新失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -121,10 +133,12 @@ export function useApiKeys() {
       enabled ? accountClient.enableApiKey(id) : accountClient.disableApiKey(id),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("状态已更新");
+      toast.success(t("状态已更新"));
     },
     onError: (error: unknown) => {
-      toast.error(`更新状态失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("更新状态失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -133,17 +147,21 @@ export function useApiKeys() {
     onSuccess: async (models) => {
       queryClient.setQueryData(["apikey-models"], models);
       await queryClient.invalidateQueries({ queryKey: ["startup-snapshot"] });
-      toast.success("模型列表已刷新");
+      toast.success(t("模型列表已刷新"));
     },
     onError: (error: unknown) => {
-      toast.error(`刷新模型失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("刷新模型失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
   const readSecretMutation = useMutation({
     mutationFn: (id: string) => accountClient.readApiKeySecret(id),
     onError: (error: unknown) => {
-      toast.error(`读取密钥失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("读取密钥失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/hooks/useI18n";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { appClient } from "@/lib/api/app-client";
@@ -24,6 +25,7 @@ interface WebPasswordModalProps {
 }
 
 export function WebPasswordModal({ open, onOpenChange }: WebPasswordModalProps) {
+  const { t } = useI18n();
   const { appSettings, setAppSettings } = useAppStore();
   const { canAccessManagementRpc } = useRuntimeCapabilities();
   const [password, setPassword] = useState("");
@@ -50,7 +52,9 @@ export function WebPasswordModal({ open, onOpenChange }: WebPasswordModalProps) 
       } catch (err: unknown) {
         if (!cancelled) {
           toast.error(
-            `读取密码状态失败: ${err instanceof Error ? err.message : String(err)}`
+            t("读取密码状态失败: {message}", {
+              message: err instanceof Error ? err.message : String(err),
+            }),
           );
         }
       }
@@ -65,15 +69,15 @@ export function WebPasswordModal({ open, onOpenChange }: WebPasswordModalProps) 
 
   const handleSave = async () => {
     if (!canAccessManagementRpc) {
-      toast.info("当前运行环境暂不支持读取或保存访问密码");
+      toast.info(t("当前运行环境暂不支持读取或保存访问密码"));
       return;
     }
     if (!password) {
-      toast.error("请输入密码");
+      toast.error(t("请输入密码"));
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("两次输入的密码不一致");
+      toast.error(t("两次输入的密码不一致"));
       return;
     }
 
@@ -81,12 +85,16 @@ export function WebPasswordModal({ open, onOpenChange }: WebPasswordModalProps) 
     try {
       const settings = await appClient.setSettings({ webAccessPassword: password });
       setAppSettings(settings);
-      toast.success("访问密码已设置");
+      toast.success(t("访问密码已设置"));
       onOpenChange(false);
       setPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
-      toast.error(`保存失败: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(
+        t("保存失败: {message}", {
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -94,19 +102,23 @@ export function WebPasswordModal({ open, onOpenChange }: WebPasswordModalProps) 
 
   const handleClear = async () => {
     if (!canAccessManagementRpc) {
-      toast.info("当前运行环境暂不支持读取或保存访问密码");
+      toast.info(t("当前运行环境暂不支持读取或保存访问密码"));
       return;
     }
     setIsLoading(true);
     try {
       const settings = await appClient.setSettings({ webAccessPassword: "" });
       setAppSettings(settings);
-      toast.success("访问密码已清除");
+      toast.success(t("访问密码已清除"));
       onOpenChange(false);
       setPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
-      toast.error(`清除失败: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(
+        t("清除失败: {message}", {
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
     } finally {
       setIsLoading(false);
     }

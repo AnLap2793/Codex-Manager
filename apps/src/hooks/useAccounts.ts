@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/startup-snapshot";
 import { getAppErrorMessage } from "@/lib/api/transport";
 import { useDeferredDesktopActivation } from "@/hooks/useDeferredDesktopActivation";
+import { useI18n } from "@/hooks/useI18n";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { useAppStore } from "@/lib/store/useAppStore";
 import { AccountListResult, StartupSnapshot } from "@/types";
@@ -20,28 +21,41 @@ type ImportByDirectoryResult = Awaited<ReturnType<typeof accountClient.importByD
 type ImportByFileResult = Awaited<ReturnType<typeof accountClient.importByFile>>;
 type ExportResult = Awaited<ReturnType<typeof accountClient.export>>;
 type DeleteUnavailableFreeResult = { deleted?: number };
+type Translator = (
+  sourceText: string,
+  params?: Record<string, unknown>,
+) => string;
 
 function isAccountRefreshBlocked(status: string | null | undefined): boolean {
   return String(status || "").trim().toLowerCase() === "disabled";
 }
 
-function buildImportSummaryMessage(result: ImportByDirectoryResult): string {
+function buildImportSummaryMessage(
+  result: ImportByDirectoryResult,
+  t: Translator,
+): string {
   const total = Number(result?.total || 0);
   const created = Number(result?.created || 0);
   const updated = Number(result?.updated || 0);
   const failed = Number(result?.failed || 0);
-  return `导入完成：共${total}，新增${created}，更新${updated}，失败${failed}`;
+  return t("导入完成：共{total}，新增{created}，更新{updated}，失败{failed}", {
+    total,
+    created,
+    updated,
+    failed,
+  });
 }
 
-function formatUsageRefreshErrorMessage(error: unknown): string {
+function formatUsageRefreshErrorMessage(error: unknown, t: Translator): string {
   const message = getAppErrorMessage(error);
   if (message.toLowerCase().includes("refresh token failed with status 401")) {
-    return "账号长期未登录，refresh 已过期，已改为不可用状态";
+    return t("账号长期未登录，refresh 已过期，已改为不可用状态");
   }
   return message;
 }
 
 export function useAccounts() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const serviceStatus = useAppStore((state) => state.serviceStatus);
   const { canAccessManagementRpc } = useRuntimeCapabilities();
@@ -62,7 +76,11 @@ export function useAccounts() {
     if (isServiceReady) {
       return true;
     }
-    toast.info(`服务未连接，暂时无法${actionLabel}`);
+    toast.info(
+      t("服务未连接，暂时无法{actionLabel}", {
+        actionLabel: t(actionLabel),
+      }),
+    );
     return false;
   };
 
@@ -164,10 +182,14 @@ export function useAccounts() {
   const refreshAccountMutation = useMutation({
     mutationFn: (accountId: string) => accountClient.refreshUsage(accountId),
     onSuccess: () => {
-      toast.success("账号用量已刷新");
+      toast.success(t("账号用量已刷新"));
     },
     onError: (error: unknown) => {
-      toast.error(`刷新失败: ${formatUsageRefreshErrorMessage(error)}`);
+      toast.error(
+        t("刷新失败: {message}", {
+          message: formatUsageRefreshErrorMessage(error, t),
+        }),
+      );
     },
     onSettled: async () => {
       await invalidateAll();
@@ -177,10 +199,14 @@ export function useAccounts() {
   const refreshAllMutation = useMutation({
     mutationFn: () => accountClient.refreshUsage(),
     onSuccess: () => {
-      toast.success("账号用量已刷新");
+      toast.success(t("账号用量已刷新"));
     },
     onError: (error: unknown) => {
-      toast.error(`刷新失败: ${formatUsageRefreshErrorMessage(error)}`);
+      toast.error(
+        t("刷新失败: {message}", {
+          message: formatUsageRefreshErrorMessage(error, t),
+        }),
+      );
     },
     onSettled: async () => {
       await invalidateAll();
@@ -191,10 +217,12 @@ export function useAccounts() {
     mutationFn: (accountId: string) => accountClient.delete(accountId),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("账号已删除");
+      toast.success(t("账号已删除"));
     },
     onError: (error: unknown) => {
-      toast.error(`删除失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("删除失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -202,10 +230,12 @@ export function useAccounts() {
     mutationFn: (accountIds: string[]) => accountClient.deleteMany(accountIds),
     onSuccess: async (_result, accountIds) => {
       await invalidateAll();
-      toast.success(`已删除 ${accountIds.length} 个账号`);
+      toast.success(t("已删除 {count} 个账号", { count: accountIds.length }));
     },
     onError: (error: unknown) => {
-      toast.error(`批量删除失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("批量删除失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -215,13 +245,17 @@ export function useAccounts() {
       await invalidateAll();
       const deleted = Number(result?.deleted || 0);
       if (deleted > 0) {
-        toast.success(`已移除 ${deleted} 个不可用免费账号`);
+        toast.success(
+          t("已移除 {count} 个不可用免费账号", { count: deleted }),
+        );
       } else {
-        toast.success("未发现可清理的不可用免费账号");
+        toast.success(t("未发现可清理的不可用免费账号"));
       }
     },
     onError: (error: unknown) => {
-      toast.error(`清理失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("清理失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -230,10 +264,12 @@ export function useAccounts() {
       accountClient.updateSort(accountId, sort),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("账号顺序已更新");
+      toast.success(t("账号顺序已更新"));
     },
     onError: (error: unknown) => {
-      toast.error(`更新顺序失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("更新顺序失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -259,10 +295,14 @@ export function useAccounts() {
       }),
     onSuccess: async () => {
       await invalidateAll();
-      toast.success("账号信息已更新");
+      toast.success(t("账号信息已更新"));
     },
     onError: (error: unknown) => {
-      toast.error(`更新账号信息失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("更新账号信息失败: {message}", {
+          message: getAppErrorMessage(error),
+        }),
+      );
     },
   });
 
@@ -286,9 +326,9 @@ export function useAccounts() {
       toast.success(
         variables.enabled
           ? normalizedSourceStatus === "inactive"
-            ? "账号已恢复"
-            : "账号已启用"
-          : "账号已禁用"
+            ? t("账号已恢复")
+            : t("账号已启用")
+          : t("账号已禁用"),
       );
     },
     onError: (error: unknown, variables) => {
@@ -297,11 +337,14 @@ export function useAccounts() {
         .toLowerCase();
       const actionLabel = variables.enabled
         ? normalizedSourceStatus === "inactive"
-          ? "恢复"
-          : "启用"
-        : "禁用";
+          ? t("恢复")
+          : t("启用")
+        : t("禁用");
       toast.error(
-        `${actionLabel}账号失败: ${getAppErrorMessage(error)}`
+        t("{actionLabel}账号失败: {message}", {
+          actionLabel,
+          message: getAppErrorMessage(error),
+        }),
       );
     },
   });
@@ -310,14 +353,16 @@ export function useAccounts() {
     mutationFn: () => accountClient.importByDirectory(),
     onSuccess: async (result: ImportByDirectoryResult) => {
       if (result?.canceled) {
-        toast.info("已取消导入");
+        toast.info(t("已取消导入"));
         return;
       }
       await invalidateAll();
-      toast.success(buildImportSummaryMessage(result));
+      toast.success(buildImportSummaryMessage(result, t));
     },
     onError: (error: unknown) => {
-      toast.error(`导入失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("导入失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -325,14 +370,16 @@ export function useAccounts() {
     mutationFn: () => accountClient.importByFile(),
     onSuccess: async (result: ImportByFileResult) => {
       if (result?.canceled) {
-        toast.info("已取消导入");
+        toast.info(t("已取消导入"));
         return;
       }
       await invalidateAll();
-      toast.success(buildImportSummaryMessage(result));
+      toast.success(buildImportSummaryMessage(result, t));
     },
     onError: (error: unknown) => {
-      toast.error(`导入失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("导入失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -340,7 +387,7 @@ export function useAccounts() {
     mutationFn: () => accountClient.export(),
     onSuccess: (result: ExportResult) => {
       if (result?.canceled) {
-        toast.info("已取消导出");
+        toast.info(t("已取消导出"));
         return;
       }
       const exported = Number(result?.exported || 0);
@@ -348,14 +395,21 @@ export function useAccounts() {
       const isBrowserDownload = outputDir === "browser-download";
       toast.success(
         isBrowserDownload
-          ? `已导出 ${exported} 个账号，浏览器将开始下载`
+          ? t("已导出 {count} 个账号，浏览器将开始下载", {
+              count: exported,
+            })
           : outputDir
-          ? `已导出 ${exported} 个账号到 ${outputDir}`
-          : `已导出 ${exported} 个账号`
+            ? t("已导出 {count} 个账号到 {outputDir}", {
+                count: exported,
+                outputDir,
+              })
+            : t("已导出 {count} 个账号", { count: exported }),
       );
     },
     onError: (error: unknown) => {
-      toast.error(`导出失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("导出失败: {message}", { message: getAppErrorMessage(error) }),
+      );
     },
   });
 
@@ -363,10 +417,14 @@ export function useAccounts() {
     mutationFn: (accountId: string) => serviceClient.setManualPreferredAccount(accountId),
     onSuccess: async () => {
       await invalidateManualPreferred();
-      toast.success("已设为优先账号");
+      toast.success(t("已设为优先账号"));
     },
     onError: (error: unknown) => {
-      toast.error(`设置优先账号失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("设置优先账号失败: {message}", {
+          message: getAppErrorMessage(error),
+        }),
+      );
     },
   });
 
@@ -374,10 +432,14 @@ export function useAccounts() {
     mutationFn: () => serviceClient.clearManualPreferredAccount(),
     onSuccess: async () => {
       await invalidateManualPreferred();
-      toast.success("已取消优先账号");
+      toast.success(t("已取消优先账号"));
     },
     onError: (error: unknown) => {
-      toast.error(`取消优先账号失败: ${getAppErrorMessage(error)}`);
+      toast.error(
+        t("取消优先账号失败: {message}", {
+          message: getAppErrorMessage(error),
+        }),
+      );
     },
   });
 
@@ -392,13 +454,13 @@ export function useAccounts() {
     isServiceReady,
     manualPreferredAccountId: manualPreferredAccountQuery.data || "",
     refreshAccount: (accountId: string) => {
-      if (!ensureServiceReady("刷新账号")) return;
+      if (!ensureServiceReady("刷新账号用量")) return;
       refreshAccountMutation.mutate(accountId);
     },
     refreshAllAccounts: () => {
-      if (!ensureServiceReady("刷新账号")) return;
+      if (!ensureServiceReady("刷新账号用量")) return;
       if (!accounts.some((account) => !isAccountRefreshBlocked(account.status))) {
-        toast.info("当前没有可刷新的账号");
+        toast.info(t("当前没有可刷新的账号"));
         return;
       }
       refreshAllMutation.mutate();
