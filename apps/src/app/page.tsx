@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { usePageTransitionReady } from "@/hooks/usePageTransitionReady";
+import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
 import { formatCompactNumber } from "@/lib/utils/usage";
 
@@ -49,6 +50,7 @@ function formatPercent(value: number | null | undefined): string {
 }
 
 function PercentBar({ label, value, tone = "default" }: PercentBarProps) {
+  const { t } = useI18n();
   const normalized = value == null ? 0 : Math.max(0, Math.min(100, Math.round(value)));
   const colorClass =
     tone === "green"
@@ -60,7 +62,7 @@ function PercentBar({ label, value, tone = "default" }: PercentBarProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-[10px]">
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">{t(label)}</span>
         <span className="font-semibold">{formatPercent(value)}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
@@ -89,6 +91,7 @@ function AccountHighlightCard({
   progressLabel,
   progressValue,
 }: AccountHighlightCardProps) {
+  const { t } = useI18n();
   const iconToneClass =
     tone === "blue"
       ? "bg-blue-500/20 text-blue-500"
@@ -106,7 +109,7 @@ function AccountHighlightCard({
           <CheckCircle2 className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium text-muted-foreground">{title}</p>
+          <p className="text-[11px] font-medium text-muted-foreground">{t(title)}</p>
           <p className="truncate text-sm font-semibold leading-5">{name}</p>
           <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         </div>
@@ -128,22 +131,23 @@ function StatProgressCard({
   color,
   sub,
 }: StatProgressCardProps) {
+  const { t } = useI18n();
   const percentage = total > 0 ? Math.min(Math.round((value / total) * 100), 100) : 0;
 
   return (
     <Card className="glass-card overflow-hidden border-none shadow-md backdrop-blur-md transition-all hover:scale-[1.02]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium">{t(title)}</CardTitle>
         <Icon className={cn("h-4 w-4", color)} />
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
           <div className="text-2xl font-bold">{value}</div>
-          <p className="mt-1 text-[10px] text-muted-foreground">{sub}</p>
+          <p className="mt-1 text-[10px] text-muted-foreground">{t(sub)}</p>
         </div>
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[10px]">
-            <span className="text-muted-foreground">占比</span>
+            <span className="text-muted-foreground">{t("占比")}</span>
             <span className="font-mono font-medium">{percentage}%</span>
           </div>
           <Progress value={percentage} className="h-1.5" />
@@ -156,12 +160,13 @@ function StatProgressCard({
 export default function DashboardPage() {
   const { stats, currentAccount, recommendations, requestLogs, isLoading, isServiceReady } =
     useDashboardStats();
+  const { t } = useI18n();
   usePageTransitionReady("/", !isServiceReady || !isLoading);
   const poolPrimary = stats.poolRemain?.primary ?? 0;
   const poolSecondary = stats.poolRemain?.secondary ?? 0;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+    <div className="animate-in space-y-6 fade-in duration-700">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, index) => (
@@ -171,15 +176,17 @@ export default function DashboardPage() {
           <>
             <Card className="glass-card overflow-hidden border-none shadow-md backdrop-blur-md transition-all hover:scale-[1.02]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">总账号数</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("总账号数")}</CardTitle>
                 <Users className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="mt-1 text-[10px] text-muted-foreground">池中所有配置账号</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {t("池中所有配置账号")}
+                </p>
                 <div className="mt-4 flex w-fit items-center gap-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] text-blue-600 dark:text-blue-400">
                   <Activity className="h-3 w-3" />
-                  最近日志 {requestLogs.length} 条
+                  {t("最近日志 {count} 条", { count: requestLogs.length })}
                 </div>
               </CardContent>
             </Card>
@@ -204,13 +211,15 @@ export default function DashboardPage() {
 
             <Card className="overflow-hidden border-none bg-primary/10 shadow-md backdrop-blur-md transition-all hover:scale-[1.02]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-primary">账号池剩余</CardTitle>
+                <CardTitle className="text-sm font-medium text-primary">
+                  {t("账号池剩余")}
+                </CardTitle>
                 <PieChart className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">5小时内</span>
+                    <span className="text-muted-foreground">{t("5小时内")}</span>
                     <span className="font-bold">{formatPercent(stats.poolRemain?.primary)}</span>
                   </div>
                   <Progress
@@ -221,7 +230,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">7天内</span>
+                    <span className="text-muted-foreground">{t("7天内")}</span>
                     <span className="font-bold">{formatPercent(stats.poolRemain?.secondary)}</span>
                   </div>
                   <Progress
@@ -237,7 +246,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[ 
+        {[
           {
             title: "今日令牌",
             value: formatCompactNumber(stats.todayTokens, "0"),
@@ -266,7 +275,7 @@ export default function DashboardPage() {
             color: "text-emerald-500",
             sub: "按官价估算",
           },
-        ].map((card) => (
+        ].map((card) =>
           isLoading ? (
             <Skeleton key={card.title} className="h-32 w-full rounded-2xl" />
           ) : (
@@ -275,22 +284,22 @@ export default function DashboardPage() {
               className="glass-card overflow-hidden border-none shadow-md backdrop-blur-md transition-all hover:scale-[1.02]"
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">{t(card.title)}</CardTitle>
                 <card.icon className={cn("h-4 w-4", card.color)} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{card.value}</div>
-                <p className="mt-1 text-[10px] text-muted-foreground">{card.sub}</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">{t(card.sub)}</p>
               </CardContent>
             </Card>
-          )
-        ))}
+          ),
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="glass-card min-h-[300px] border-none shadow-md">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base font-semibold">当前活跃账号</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("当前活跃账号")}</CardTitle>
           </CardHeader>
           <CardContent className="flex min-h-[200px] flex-col justify-start">
             {isLoading ? (
@@ -311,23 +320,39 @@ export default function DashboardPage() {
                 />
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="space-y-3 rounded-xl bg-muted/30 p-4">
-                    <p className="text-xs text-muted-foreground">5小时剩余</p>
-                    <p className="text-lg font-bold">{formatPercent(currentAccount.primaryRemainPercent)}</p>
-                    <PercentBar label="剩余额度" value={currentAccount.primaryRemainPercent} tone="green" />
+                    <p className="text-xs text-muted-foreground">{t("5小时剩余")}</p>
+                    <p className="text-lg font-bold">
+                      {formatPercent(currentAccount.primaryRemainPercent)}
+                    </p>
+                    <PercentBar
+                      label="剩余额度"
+                      value={currentAccount.primaryRemainPercent}
+                      tone="green"
+                    />
                   </div>
                   <div className="space-y-3 rounded-xl bg-muted/30 p-4">
-                    <p className="text-xs text-muted-foreground">7天剩余</p>
-                    <p className="text-lg font-bold">{formatPercent(currentAccount.secondaryRemainPercent)}</p>
-                    <PercentBar label="剩余额度" value={currentAccount.secondaryRemainPercent} tone="blue" />
+                    <p className="text-xs text-muted-foreground">{t("7天剩余")}</p>
+                    <p className="text-lg font-bold">
+                      {formatPercent(currentAccount.secondaryRemainPercent)}
+                    </p>
+                    <PercentBar
+                      label="剩余额度"
+                      value={currentAccount.secondaryRemainPercent}
+                      tone="blue"
+                    />
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                <div className="rounded-full bg-accent/30 p-4 animate-pulse">
+                <div className="animate-pulse rounded-full bg-accent/30 p-4">
                   <Activity className="h-8 w-8 opacity-20" />
                 </div>
-                <p>{isServiceReady ? "暂无可识别的活跃账号" : "正在等待服务连接"}</p>
+                <p>
+                  {isServiceReady
+                    ? t("暂无可识别的活跃账号")
+                    : t("正在等待服务连接")}
+                </p>
               </div>
             )}
           </CardContent>
@@ -335,11 +360,11 @@ export default function DashboardPage() {
 
         <Card className="glass-card min-h-[300px] border-none shadow-md">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">智能推荐</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("智能推荐")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
-              基于当前配额，系统会优先推荐剩余额度更高且仍可参与路由的账号。
+              {t("基于当前配额，系统会优先推荐剩余额度更高且仍可参与路由的账号。")}
             </p>
             {isLoading ? (
               <div className="space-y-4">
@@ -371,7 +396,9 @@ export default function DashboardPage() {
               </>
             ) : (
               <div className="rounded-xl bg-accent/20 p-4 text-sm text-muted-foreground">
-                {isServiceReady ? "当前没有可推荐的可用账号。" : "正在等待服务连接。"}
+                {isServiceReady
+                  ? t("当前没有可推荐的可用账号。")
+                  : t("正在等待服务连接。")}
               </div>
             )}
           </CardContent>

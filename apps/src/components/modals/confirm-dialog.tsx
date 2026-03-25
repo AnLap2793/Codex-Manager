@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/hooks/useI18n";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -31,6 +32,8 @@ export function ConfirmDialog({
   confirmVariant = "default",
   onConfirm,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -38,13 +41,13 @@ export function ConfirmDialog({
         className="glass-card border-none p-6 sm:max-w-[420px]"
       >
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{t(title)}</DialogTitle>
+          <DialogDescription>{t(description)}</DialogDescription>
         </DialogHeader>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {cancelText}
+            {t(cancelText)}
           </Button>
           <Button
             variant={confirmVariant}
@@ -53,7 +56,7 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
           >
-            {confirmText}
+            {t(confirmText)}
           </Button>
         </DialogFooter>
       </DialogContent>

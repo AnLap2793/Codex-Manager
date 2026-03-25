@@ -1,5 +1,7 @@
 "use client";
 
+import { getRuntimeUiLocale, translateText } from "@/lib/i18n";
+
 function legacyCopyText(text: string): boolean {
   if (typeof document === "undefined") {
     return false;
@@ -52,5 +54,7 @@ export async function copyTextToClipboard(text: string): Promise<void> {
     return;
   }
 
-  throw new Error("当前环境不支持复制，请手动复制。");
+  throw new Error(
+    translateText(getRuntimeUiLocale(), "当前环境不支持复制，请手动复制。"),
+  );
 }

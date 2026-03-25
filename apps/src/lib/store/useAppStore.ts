@@ -1,16 +1,19 @@
 import { create } from "zustand";
 import { AppSettings, RuntimeCapabilities, ServiceStatus } from "../../types";
+import { DEFAULT_UI_LOCALE, readPersistedUiLocale, type UiLocale } from "@/lib/i18n";
 
 interface AppState {
   serviceStatus: ServiceStatus;
   appSettings: AppSettings;
   runtimeCapabilities: RuntimeCapabilities | null;
+  uiLocale: UiLocale;
   isSidebarOpen: boolean;
   pendingRoutePath: string;
   
   setServiceStatus: (status: Partial<ServiceStatus>) => void;
   setAppSettings: (settings: Partial<AppSettings>) => void;
   setRuntimeCapabilities: (capabilities: RuntimeCapabilities | null) => void;
+  setUiLocale: (locale: UiLocale) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setPendingRoutePath: (path: string) => void;
@@ -79,6 +82,8 @@ export const useAppStore = create<AppState>((set) => ({
     appearancePreset: "classic",
   },
   runtimeCapabilities: null,
+  uiLocale:
+    typeof window === "undefined" ? DEFAULT_UI_LOCALE : readPersistedUiLocale(),
   isSidebarOpen: true,
   pendingRoutePath: "",
 
@@ -89,6 +94,8 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ appSettings: { ...state.appSettings, ...settings } })),
 
   setRuntimeCapabilities: (runtimeCapabilities) => set({ runtimeCapabilities }),
+
+  setUiLocale: (uiLocale) => set({ uiLocale }),
     
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   

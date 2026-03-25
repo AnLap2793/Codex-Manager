@@ -25,6 +25,7 @@ import {
   isSecondaryWindowOnlyUsage,
 } from "@/lib/utils/usage";
 import { Account } from "@/types";
+import { useI18n } from "@/hooks/useI18n";
 
 interface UsageModalProps {
   account: Account | null;
@@ -53,6 +54,7 @@ function UsageDetailRow({
   emptyText = "--",
   emptyResetText = "未知",
 }: UsageDetailRowProps) {
+  const { t, locale } = useI18n();
   const value = remainPercent ?? 0;
   const iconToneClass =
     tone === "blue" ? "bg-blue-500/10 text-blue-500" : "bg-green-500/10 text-green-500";
@@ -66,14 +68,14 @@ function UsageDetailRow({
           <div className={cn("rounded-lg p-1.5", iconToneClass)}>
             <Icon className="h-4 w-4" />
           </div>
-          <span className="font-semibold">{label}</span>
+          <span className="font-semibold">{t(label)}</span>
         </div>
         <div className="text-right">
           <span className="text-lg font-bold">
-            {remainPercent == null ? emptyText : `${value}%`}
+            {remainPercent == null ? t(emptyText) : `${value}%`}
           </span>
           <span className="ml-1 text-xs text-muted-foreground">
-            {remainPercent == null ? "" : "剩余"}
+            {remainPercent == null ? "" : t("剩余")}
           </span>
         </div>
       </div>
@@ -85,10 +87,16 @@ function UsageDetailRow({
       />
 
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>已使用 {remainPercent == null ? "--" : `${Math.max(0, 100 - value)}%`}</span>
+        <span>
+          {t("已使用 {value}", {
+            value: remainPercent == null ? "--" : `${Math.max(0, 100 - value)}%`,
+          })}
+        </span>
         <span className="flex items-center gap-1">
           <Clock className="h-2.5 w-2.5" />
-          重置时间: {formatTsFromSeconds(resetsAt, emptyResetText)}
+          {t("重置时间: {value}", {
+            value: formatTsFromSeconds(resetsAt, t(emptyResetText), locale),
+          })}
         </span>
       </div>
     </div>
@@ -102,6 +110,7 @@ export default function UsageModal({
   onRefresh,
   isRefreshing,
 }: UsageModalProps) {
+  const { t, locale } = useI18n();
   if (!account) return null;
   const primaryWindowOnly = isPrimaryWindowOnlyUsage(account.usage);
   const secondaryWindowOnly = isSecondaryWindowOnlyUsage(account.usage);
@@ -115,10 +124,13 @@ export default function UsageModal({
             <div className="rounded-full bg-primary/10 p-2 text-primary">
               <Database className="h-5 w-5" />
             </div>
-            <DialogTitle>用量详情</DialogTitle>
+            <DialogTitle>{t("用量详情")}</DialogTitle>
           </div>
           <DialogDescription className="font-medium text-foreground/80">
-            账号: {account.name} ({account.id.slice(0, 8)}...)
+            {t("账号: {name} ({id})", {
+              name: account.name,
+              id: `${account.id.slice(0, 8)}...`,
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -145,18 +157,20 @@ export default function UsageModal({
 
           <div className="text-center">
             <p className="text-[10px] italic text-muted-foreground">
-              数据捕获于: {formatTsFromSeconds(account.lastRefreshAt, "未知时间")}
+              {t("数据捕获于: {value}", {
+                value: formatTsFromSeconds(account.lastRefreshAt, t("未知时间"), locale),
+              })}
             </p>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            关闭
+            {t("关闭")}
           </Button>
           <Button onClick={() => onRefresh(account.id)} disabled={isRefreshing} className="gap-2">
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            {isRefreshing ? "正在刷新..." : "立即刷新"}
+            {isRefreshing ? t("正在刷新...") : t("立即刷新")}
           </Button>
         </DialogFooter>
       </DialogContent>

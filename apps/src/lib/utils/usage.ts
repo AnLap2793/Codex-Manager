@@ -1,16 +1,9 @@
 "use client";
 
 import { Account, AccountUsage, AvailabilityLevel, RequestLog } from "@/types";
+import { getIntlLocale, getRuntimeUiLocale, type UiLocale } from "@/lib/i18n";
 
-const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
+const dateTimeFormatterCache = new Map<UiLocale, Intl.DateTimeFormat>();
 
 const COMPACT_NUMBER_UNITS = [
   { value: 1e18, suffix: "E" },
@@ -24,7 +17,11 @@ const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
 const WINDOW_ROUNDING_BIAS_MINUTES = 3;
 
-type UsageWindowDisplayMode = "primary-only" | "secondary-only" | "dual" | "unknown";
+type UsageWindowDisplayMode =
+  | "primary-only"
+  | "secondary-only"
+  | "dual"
+  | "unknown";
 
 export function toNullableNumber(value: unknown): number | null {
   if (typeof value === "number") {
@@ -41,12 +38,28 @@ export function toNullableNumber(value: unknown): number | null {
 
 export function formatTsFromSeconds(
   timestamp: number | null | undefined,
-  emptyLabel = "未知"
+  emptyLabel = "未知",
+  locale: UiLocale = getRuntimeUiLocale(),
 ): string {
   if (!timestamp) return emptyLabel;
   const date = new Date(timestamp * 1000);
   if (Number.isNaN(date.getTime())) return emptyLabel;
-  return dateTimeFormatter.format(date);
+
+  let formatter = dateTimeFormatterCache.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(getIntlLocale(locale), {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    dateTimeFormatterCache.set(locale, formatter);
+  }
+
+  return formatter.format(date);
 }
 
 function trimTrailingZeros(text: string): string {
@@ -56,7 +69,7 @@ function trimTrailingZeros(text: string): string {
 export function formatCompactNumber(
   value: number | null | undefined,
   fallback = "-",
-  maxFractionDigits = 1
+  maxFractionDigits = 1,
 ): string {
   const parsed = toNullableNumber(value);
   if (parsed == null) return fallback;
@@ -80,7 +93,7 @@ function normalizedAccountStatus(account?: { status?: string } | null): string {
 }
 
 function normalizedAccountStatusReason(
-  account?: { statusReason?: string } | null
+  account?: { statusReason?: string } | null,
 ): string {
   return String(account?.statusReason || "").trim().toLowerCase();
 }
@@ -98,7 +111,7 @@ function isUnavailableAccount(account?: { status?: string } | null): boolean {
 }
 
 export function isBannedAccount(
-  account?: { status?: string; statusReason?: string } | null
+  account?: { status?: string; statusReason?: string } | null,
 ): boolean {
   if (normalizedAccountStatus(account) !== "unavailable") {
     return false;
@@ -161,7 +174,8 @@ function extractPlanTypeRecursive(value: unknown): string | null {
     "accountType",
     "type",
   ]) {
-    const text = typeof source[key] === "string" ? source[key].trim().toLowerCase() : "";
+    const text =
+      typeof source[key] === "string" ? source[key].trim().toLowerCase() : "";
     if (text) return text;
   }
 
@@ -180,10 +194,11 @@ function isFreePlanUsage(raw: string | null | undefined): boolean {
 }
 
 export function getUsageWindowDisplayMode(
-  usage?: Partial<AccountUsage> | null
+  usage?: Partial<AccountUsage> | null,
 ): UsageWindowDisplayMode {
   const hasPrimarySignal =
-    toNullableNumber(usage?.usedPercent) != null || toNullableNumber(usage?.windowMinutes) != null;
+    toNullableNumber(usage?.usedPercent) != null ||
+    toNullableNumber(usage?.windowMinutes) != null;
   const secondarySignal = hasSecondarySignal(usage);
 
   if (!hasPrimarySignal && !secondarySignal) {
@@ -231,7 +246,7 @@ export function getUsageDisplayBuckets(usage?: Partial<AccountUsage> | null): {
 
 export function calcAvailability(
   usage?: Partial<AccountUsage> | null,
-  account?: { status?: string; statusReason?: string } | null
+  account?: { status?: string; statusReason?: string } | null,
 ): { text: string; level: AvailabilityLevel } {
   if (isDisabledAccount(account)) {
     return { text: "已禁用", level: "bad" };
@@ -299,13 +314,13 @@ export function calcAvailability(
 }
 
 export function isPrimaryWindowOnlyUsage(
-  usage?: Partial<AccountUsage> | null
+  usage?: Partial<AccountUsage> | null,
 ): boolean {
   return getUsageWindowDisplayMode(usage) === "primary-only";
 }
 
 export function isSecondaryWindowOnlyUsage(
-  usage?: Partial<AccountUsage> | null
+  usage?: Partial<AccountUsage> | null,
 ): boolean {
   return getUsageWindowDisplayMode(usage) === "secondary-only";
 }
@@ -327,7 +342,7 @@ export function canParticipateInRouting(level: AvailabilityLevel): boolean {
 export function pickCurrentAccount(
   accounts: Account[],
   requestLogs: RequestLog[],
-  manualPreferredAccountId?: string
+  manualPreferredAccountId?: string,
 ): Account | null {
   if (!accounts.length) return null;
 

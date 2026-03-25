@@ -1,21 +1,22 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Key, 
+import {
+  LayoutDashboard,
+  Users,
+  Key,
   Database,
-  FileText, 
-  Settings, 
-  ChevronLeft, 
-  ChevronRight
+  FileText,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { normalizeRoutePath } from "@/lib/utils/static-routes";
 import { Button } from "@/components/ui/button";
 import { useRuntimeCapabilities } from "@/hooks/useRuntimeCapabilities";
 import { useAppStore } from "@/lib/store/useAppStore";
+import { useI18n } from "@/hooks/useI18n";
 import {
   memo,
   useCallback,
@@ -33,7 +34,7 @@ const NAV_ITEMS = [
   { name: "平台密钥", href: "/apikeys/", icon: Key },
   { name: "请求日志", href: "/logs/", icon: FileText },
   { name: "设置", href: "/settings/", icon: Settings },
-];
+] as const;
 const DESKTOP_NAVIGATION_FALLBACK_MS = 2_500;
 const DESKTOP_ROUTE_WARMUP_TIMEOUT_MS = 4_000;
 
@@ -43,12 +44,14 @@ const NavItem = memo(({
   isSidebarOpen,
   onNavigate,
   onPrefetch,
+  label,
 }: {
-  item: typeof NAV_ITEMS[0],
-  isActive: boolean,
-  isSidebarOpen: boolean,
-  onNavigate: (href: string, event: MouseEvent<HTMLAnchorElement>) => void,
-  onPrefetch: (href: string) => void,
+  item: typeof NAV_ITEMS[number];
+  isActive: boolean;
+  isSidebarOpen: boolean;
+  onNavigate: (href: string, event: MouseEvent<HTMLAnchorElement>) => void;
+  onPrefetch: (href: string) => void;
+  label: string;
 }) => (
   <a
     href={item.href}
@@ -58,11 +61,11 @@ const NavItem = memo(({
     onFocus={() => onPrefetch(item.href)}
     className={cn(
       "flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
-      isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+      isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
     )}
   >
     <item.icon className="h-4 w-4 shrink-0" />
-    {isSidebarOpen && <span className="text-sm truncate">{item.name}</span>}
+    {isSidebarOpen && <span className="truncate text-sm">{label}</span>}
   </a>
 ));
 
@@ -71,12 +74,9 @@ NavItem.displayName = "NavItem";
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const {
-    isSidebarOpen,
-    toggleSidebar,
-    setPendingRoutePath,
-  } = useAppStore();
+  const { isSidebarOpen, toggleSidebar, setPendingRoutePath } = useAppStore();
   const { isDesktopRuntime } = useRuntimeCapabilities();
+  const { t } = useI18n();
   const normalizedPathname = normalizeRoutePath(pathname);
   const [optimisticPathname, setOptimisticPathname] = useState<string | null>(null);
   const desktopNavigationFallbackTimerRef = useRef<number | null>(null);
@@ -176,7 +176,7 @@ export function Sidebar() {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(
         () => controller.abort(),
-        DESKTOP_ROUTE_WARMUP_TIMEOUT_MS
+        DESKTOP_ROUTE_WARMUP_TIMEOUT_MS,
       );
       controllers.push(controller);
       try {
@@ -190,7 +190,6 @@ export function Sidebar() {
           },
         });
       } catch {
-        // 中文注释：路由文档预热失败时静默回退，不影响正常导航。
       } finally {
         window.clearTimeout(timeoutId);
         const index = controllers.indexOf(controller);
@@ -238,58 +237,60 @@ export function Sidebar() {
     };
   }, [isDesktopRuntime, normalizedPathname, prefetchRoute]);
 
-  const renderedItems = useMemo(() => 
-    NAV_ITEMS.map((item) => (
-      <NavItem 
-        key={item.href} 
-        item={item} 
-        isActive={normalizeRoutePath(item.href) === activePathname} 
-        isSidebarOpen={isSidebarOpen}
-        onNavigate={handleNavigate}
-        onPrefetch={prefetchRoute}
-      />
-    )),
-    [activePathname, handleNavigate, isSidebarOpen, prefetchRoute]
+  const renderedItems = useMemo(
+    () =>
+      NAV_ITEMS.map((item) => (
+        <NavItem
+          key={item.href}
+          item={item}
+          isActive={normalizeRoutePath(item.href) === activePathname}
+          isSidebarOpen={isSidebarOpen}
+          onNavigate={handleNavigate}
+          onPrefetch={prefetchRoute}
+          label={t(item.name)}
+        />
+      )),
+    [activePathname, handleNavigate, isSidebarOpen, prefetchRoute, t],
   );
 
   return (
     <div
       className={cn(
         "relative z-20 flex shrink-0 flex-col glass-sidebar transition-[width] duration-300 ease-in-out",
-        isSidebarOpen ? "w-64" : "w-16"
+        isSidebarOpen ? "w-64" : "w-16",
       )}
     >
-      <div className="flex h-16 items-center px-4 border-b shrink-0">
+      <div className="flex h-16 items-center border-b px-4 shrink-0">
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <span className="text-sm font-bold">CM</span>
           </div>
           {isSidebarOpen && (
-            <div className="flex flex-col overflow-hidden animate-in fade-in duration-300">
-              <span className="text-sm font-bold truncate">CodexManager</span>
-              <span className="text-xs text-muted-foreground truncate opacity-70">账号池 · 用量管理</span>
+            <div className="flex animate-in fade-in duration-300 flex-col overflow-hidden">
+              <span className="truncate text-sm font-bold">CodexManager</span>
+              <span className="truncate text-xs text-muted-foreground opacity-70">
+                {t("账户池 · 用量管理")}
+              </span>
             </div>
           )}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="grid gap-1 px-2">
-          {renderedItems}
-        </nav>
+        <nav className="grid gap-1 px-2">{renderedItems}</nav>
       </div>
 
       <div className="border-t p-2 shrink-0">
         <Button
           variant="ghost"
           size="icon"
-          className="w-full justify-start gap-3 px-3 h-10"
+          className="h-10 w-full justify-start gap-3 px-3"
           onClick={toggleSidebar}
         >
           {isSidebarOpen ? (
             <>
               <ChevronLeft className="h-4 w-4 shrink-0" />
-              <span className="text-sm">收起侧边栏</span>
+              <span className="text-sm">{t("收起侧边栏")}</span>
             </>
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0" />

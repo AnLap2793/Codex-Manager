@@ -10,6 +10,7 @@ import {
   appearanceInitScript,
   DEFAULT_APPEARANCE_PRESET,
 } from "@/lib/appearance";
+import { localeInitScript } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "CodexManager",
@@ -29,6 +30,7 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: appearanceInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
         <Providers>
           <AppBootstrap>
             <div className="flex h-screen overflow-hidden">
