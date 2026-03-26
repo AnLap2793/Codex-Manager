@@ -166,7 +166,6 @@ export default function AggregateApiPage() {
       setTestingApiId(apiId);
     },
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] });
       toast.success(
         result.ok
           ? t("连通性测试成功")
@@ -176,6 +175,7 @@ export default function AggregateApiPage() {
       );
     },
     onSettled: async (_result, _error, apiId) => {
+      await queryClient.invalidateQueries({ queryKey: ["aggregate-apis"] });
       setTestingApiId((current) => (current === apiId ? null : current));
     },
     onError: (error: unknown) => {
